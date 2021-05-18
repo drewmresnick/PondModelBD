@@ -5,6 +5,10 @@
 #             Single layer mixed pond
 #             morning minimum temperature (Tmin_air) as morning minimum dry-bulb temperature (line 816; cmd+F T_d) in place of Relative humidity
 
+import numpy as np
+import datetime as dt
+import csv
+import pandas as pd
 
 #Setting constant values 
 
@@ -23,7 +27,7 @@ lambda_s = [0,0,1,30.41,54.59,36.7,1,0]
 
 #should we set sequence values as arrays instead of lists - for efficiency? (question for Drew)
 
-import numpy as np
+
 lambda_s = np.array(lambda_s) #array
 
 #setting variables
@@ -34,7 +38,6 @@ time_of_day = np.arange(0,24,3) #array of 3 hourly windows in a day
 #using package datetime makes it easier to get month, year (this is also dependant on the the way the data
 # file is set up)
 
-import datetime as dt
 def find_day_month_year(input_day, start_day = dt.date(2016,12,31)):
     computed_day = start_day + dt.timedelta(days = input_day)
     days_from_year_start = computed_day - dt.date(computed_day.year, 1, 1) + dt.timedelta(days = 1)
@@ -43,7 +46,7 @@ def find_day_month_year(input_day, start_day = dt.date(2016,12,31)):
 
 #reading in input csv file as array (question for drew: let me know if you want to work with dataframe instead)
 # I separated the two districts into two files for ease for now, not sure if we want to keep them together
-import csv
+
 data = open('input_data_for_simulation_2017_2019_khulna.csv')
 csv_data = csv.reader(data)
 data_file = list(csv_data)
