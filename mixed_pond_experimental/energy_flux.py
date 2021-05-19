@@ -52,17 +52,13 @@ def find_day_month_year(input_day, start_day = dt.date(2016,12,31)):
 #create a function to read data for particular day, month and year so we can use it to loop through all days later
 
 def read_dataline(day_argue):
+    
     day, day_mon_year = find_day_month_year(day_argue)
     year = day_mon_year.year
     
-    selected_data = []
-
-    for row_idx, row in enumerate(data_file):
-        if row_idx > 0:
-            if int(row[0]) == day and int(row[1]) == year: #important** convert data file rows to integers when using in function as csv reader reads them as strings 
-                selected_data = row
-                break
-    return(selected_data)       
+    selected_data = data[(data['day']== day) & (data['year'] == year)]
+            
+    return selected_data      
              
 #setting functions for energy variables in the energy flux equation
 #calculate phi_sn pr penetrating short-wae solar radiation
