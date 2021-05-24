@@ -38,6 +38,7 @@ time_of_day = np.arange(0,24,3) #array of 3 hourly windows in a day
 
 #open csv file using pandas to create pandas dataframe 
 data = pd.read_csv("input_data_for_simulation_2017_2019_khulna.csv") 
+air_temp_data = pd.read_csv("diurnal_air_temp_khulna.csv") 
 
 #create a function to get month and year based on integer sequence input
 #using package datetime makes it easier to get month, year (this is also dependant on the the way the data
@@ -82,3 +83,31 @@ def calculate_phi_sn(day_argue, hour_period):
     phi_sn = phi_s * (1-R)
     
     return phi_sn
+
+#create function to open air_temp file for day month and year
+
+def read_air_temp(day_argue,hour_period):
+    day, day_mon_year = find_day_month_year(day_argue)
+    year = day_mon_year.year
+    
+    time = time_of_day[hour_period] 
+    
+    selected_air_data = air_temp_data[(air_temp_data['day']== day) & (air_temp_data['year'] == year)]
+    selected_air_data = selected_air_data[(selected_air_data['time']== time)]        
+    return selected_air_data  
+
+
+#creating a function for phi_at atmospheric radiation following the equation in variables excel sheet
+#shammun includes cloud fraction in the equation
+
+def calculate_phi_at(day_argue, hour_period):
+    air_temp_line = read_air_temp(day_argue, hour_period)
+    T_ak = air_temp_line['air_temp'] #in kelvin
+    e = (0.398 * (10 ** (-5)))*(T_ak ** (2.148))
+    r = 0.03 # reflectance of the water surface to longwave radiation
+    sigma = 2.07 * (10 ** (-7)) # Stefan-Boltzman constant, unit Kg/m2/hr/K^4
+    phi_at = (1-r)*e*sigma*((T_ak)**4)
+
+    return(phi_at)
+
+
