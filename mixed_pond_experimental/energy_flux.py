@@ -9,6 +9,7 @@ import numpy as np
 import datetime as dt
 import csv
 import pandas as pd
+import math
 
 #Setting constant values 
 
@@ -66,7 +67,7 @@ def read_dataline(day_argue):
 
 def calculate_phi_sn(day_argue, hour_period):
     daily_data = read_dataline(day_argue)
-    wind_speed = int(float(daily_data.wind_speed_2m))
+    wind_speed = daily_data['wind_speed_2m']
     #solar_daily?
     
     
@@ -110,4 +111,60 @@ def calculate_phi_at(day_argue, hour_period):
 
     return(phi_at)
 
+#create function for phi_ws water surface radiation
+#this equation need water surface temp T_wk (kelvin), this will be initialized using the t-1 timestep value
+# from the water temp data file (ideally Jan 1st 2018, morning water temp)
 
+def calculate_phi_ws(T_wk, day_argue, hour_period):
+    
+    T_wk = 291.65  #first value
+
+# set T_wk such that it reads the final output water temp from results in a loop
+    
+    phi_ws = 0.97 * sigma * ((T_wk)**4)
+
+    return(phi_ws)
+
+#create function for phi_e evaporative heat loss
+#here, we use average dailt dew point temp in place of relative humidity values
+
+def calculate_phi_e(day_argue, hour_period):
+    daily_data = read_dataline(day_argue)
+    wind_speed = daily_data['wind_speed_2m']
+
+    W_2 = wind_speed * 3.6
+
+    T_min_air = daily_data['min_temp'] + 273.15 #(kelvin) #this should be changing by the hour? why mi temp?
+
+    T_d = T_min_air - 2 # T_d is the average daily dew-point temperature.From page 235 of the Culberson paper.
+
+# e_s, saturated vapor pressure at T_wc or T_wk; unit mmHg
+    T_wk = 291.65 #first value
+
+    e_s = 25.374 * math.exp(17.62 - 5271/T_wk)
+
+# e_a, water vapor pressure above the pond surface; unit mmHg
+#e(millibars) = 6.1078 exp( (17.269*T) / (237.3+T) )
+          #where,
+#e is saturated vapor pressure in millibars
+#T is temperature in degrees C
+    
+    phi_e = N* W_2 * (e_s- e_a)
+    return(phi_e)
+
+#create function for phi_c sensible heat transfer
+
+def calculate_phi_c(day_argue, hour_period):
+    daily_data = read_dataline(day_argue)
+    wind_speed = daily_data['wind_speed_2m']
+
+    W = wind_speed * 3.6 # Convert ms-1 to Kmhr-1 #check units for all variables ask drew
+
+    air_temp_line = read_air_temp(day_argue, hour_period)
+    T_ak = air_temp_line['air_temp'] #in kelvin
+
+    T_wk = 291.65 #first value
+
+    phi_c = 1.5701 * W * (T_wk-T_ak)
+
+    return(phi_c)
