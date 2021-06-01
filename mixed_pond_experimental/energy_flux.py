@@ -42,9 +42,9 @@ data = pd.read_csv("input_data_for_simulation_2017_2019_khulna.csv")
 #create a function to get month and year based on integer sequence input
 #using package datetime makes it easier to get month, year (this is also dependant on the the way the data
 # file is set up)
-
+#data.day[i] needs= float for timedelta() func; (data.day[i] = int in pandas df) 
 def find_day_month_year(input_day, start_day = dt.date(2016,12,31)):
-    computed_day = start_day + dt.timedelta(days = input_day)
+    computed_day = start_day + dt.timedelta(days = float(input_day))
     days_from_year_start = computed_day - dt.date(computed_day.year, 1, 1) + dt.timedelta(days = 1)
 
     return days_from_year_start.days, computed_day
@@ -65,7 +65,7 @@ def read_dataline(day_argue):
 
 def calculate_phi_sn(day_argue, hour_period):
     daily_data = read_dataline(day_argue)
-    wind_speed = int(float(daily_data[3]))
+    wind_speed = int(float(daily_data.wind_speed_2m))
     #solar_daily?
     
     
@@ -82,6 +82,3 @@ def calculate_phi_sn(day_argue, hour_period):
     phi_sn = phi_s * (1-R)
     
     return phi_sn
-
-
-
