@@ -15,7 +15,7 @@ import math
 
 pi = 3.1415 
 sigma = 2.07*10**(-7)  ##stefan boltzman constant
-N = 5.0593 ##empirical coefficient 
+N = 5.0593 ##empirical coefficient unit m^-2km^-1 mmHg^-1
 water_heat_capacity = 4.184 #joules
 pond_depth = 1.5204 #meters
 water_density = 997 #kg/m3
@@ -78,7 +78,7 @@ def calculate_phi_sn(day_argue, hour_period):
     
     R= R_s *(1-0.08 * W_z)
     
-    phi_s = int(float(daily_data[8+hour_period]))   #8th column plus number of hour gets us sol rad for that hour
+    phi_s = int(float(daily_data[8+hour_period]))   #8th column plus number of hour gets us sol rad for that hour units watts/m square
     #have to convert string to integer and then to float everytime is there a better way to handle this? (question for drew)
 
     phi_sn = phi_s * (1-R)
@@ -134,9 +134,9 @@ def calculate_phi_e(day_argue, hour_period):
 
     W_2 = wind_speed * 3.6
 
-    T_min_air = daily_data['min_temp'] + 273.15 #(kelvin) #this should be changing by the hour? why mi temp?
+    T_min_air = daily_data['min_temp']  #already in kelvin
 
-    T_d = T_min_air - 2 # T_d is the average daily dew-point temperature.From page 235 of the Culberson paper.
+    T_d = T_min_air - 275.15 # T_d is the average daily dew-point temperature.From page 235 of the Culberson paper.
 
 # e_s, saturated vapor pressure at T_wc or T_wk; unit mmHg
     T_wk = 291.65 #first value
@@ -161,7 +161,7 @@ def calculate_phi_c(day_argue, hour_period):
     W = wind_speed * 3.6 # Convert ms-1 to Kmhr-1 #check units for all variables ask drew
 
     air_temp_line = read_air_temp(day_argue, hour_period)
-    T_ak = air_temp_line['air_temp'] #in kelvin
+    T_ak = air_temp_line['air_temp'] #already in kelvin
 
     T_wk = 291.65 #first value
 
