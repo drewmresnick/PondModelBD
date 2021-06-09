@@ -7,18 +7,20 @@
 
 import numpy as np
 import datetime as dt
-import csv
 import pandas as pd
 import math
+
 
 #Setting constant values 
 
 pi = 3.1415 
-sigma = 2.07*10**(-7)  ##stefan boltzman constant
+sigma = 2.07e-7 ##stefan boltzman constant
 N = 5.0593 ##empirical coefficient unit m^-2km^-1 mmHg^-1
 water_heat_capacity = 4.184 #joules
 pond_depth = 1.5204 #meters
 water_density = 997 #kg/m3
+T_wk = 287.15 #first day water temp at khulna 
+srad_names = ['SRAD00', 'SRAD03', 'SRAD06', 'SRAD09','SRAD12', 'SRAD15', 'SRAD18', 'SRAD21']
 
 # lambda, solar altitude angle
 #for lambda install and import package pysolar to use function solar.get_altitude
@@ -68,20 +70,25 @@ def read_dataline(day_argue):
 def calculate_phi_sn(day_argue, hour_period):
     daily_data = read_dataline(day_argue)
     wind_speed = daily_data['wind_speed_2m']
-    #solar_daily?
-    
     
     lambda_value = lambda_s[hour_period] #remember hour period integer corresponds to lamba value
-    R_s = 2.2*((180*lambda_value)/pi)**(-0.97)
     
+
+    if lambda_value == 0:
+            R_s = 0
+    else:
+            R_s = 2.2*((180*lambda_value)/pi)**(-0.97)
+        
+
     W_z = wind_speed * 3.6
     
     R= R_s *(1-0.08 * W_z)
     
-    phi_s = int(float(daily_data[8+hour_period]))   #8th column plus number of hour gets us sol rad for that hour units watts/m square
-    #have to convert string to integer and then to float everytime is there a better way to handle this? (question for drew)
+    index = srad_names[hour_period-1]  #picking the hour index for 3 hour window units watts/m square
+    
+    phi_s = daily_data[index]  
 
-    phi_sn = phi_s * (1-R)
+    phi_sn = float(phi_s * (1-R))
     
     return phi_sn
 
@@ -106,8 +113,7 @@ def calculate_phi_at(day_argue, hour_period):
     T_ak = air_temp_line['air_temp'] #in kelvin
     e = (0.398 * (10 ** (-5)))*(T_ak ** (2.148))
     r = 0.03 # reflectance of the water surface to longwave radiation
-    sigma = 2.07 * (10 ** (-7)) # Stefan-Boltzman constant, unit Kg/m2/hr/K^4
-    phi_at = (1-r)*e*sigma*((T_ak)**4)
+    phi_at = float((1-r)*e*sigma*((T_ak)**4))
 
     return(phi_at)
 
@@ -120,7 +126,7 @@ def calculate_phi_ws(T_wk, day_argue, hour_period):
 
 # set T_wk such that it reads the final output water temp from results in a loop
     
-    phi_ws = 0.97 * sigma * ((T_wk)**4)
+    phi_ws = float(0.97 * sigma * ((T_wk)**4))
 
     return(phi_ws)
 
@@ -133,21 +139,20 @@ def calculate_phi_e(T_wk,day_argue, hour_period):
 
     W_2 = wind_speed * 3.6
 
-    T_min_air = daily_data['min_temp']  #already in kelvin
+    T_min_air = daily_data['min_temp']  #degree celcius
 
-    T_d = T_min_air - 275.15 # T_d is the average daily dew-point temperature.From page 235 of the Culberson paper.
+    T_d = T_min_air - 2 # T_d is the average daily dew-point temperature.From page 235 of the Culberson paper.
+    T_d = T_d + 273.15 #kelvin
+# e_s, saturated vapor pressure needs to be in T_wc deg celcius
 
-# e_s, saturated vapor pressure at T_wc or T_wk; unit mmHg
-    
-    e_s = 25.374 * math.exp(17.62 - 5271/T_wk)
+    T_wc = T_wk - 273.15
+    e_s = 25.374 * math.exp(17.62 - 5271/T_wc)
 
 # e_a, water vapor pressure above the pond surface; unit mmHg
-    e_a= 6.1078 math.exp( (17.269 * T_d) / (237.3 + T_d) )
-          #where,
-#e is saturated vapor pressure in millibars
-#T is temperature in degrees C
-    
-    phi_e = N* W_2 * (e_s- e_a)
+    e_a= 610.78 * math.exp(17.269 * ((T_d -273.16) / (T_d - 35.86)))
+          
+
+    phi_e = float(N* W_2 * (e_s- e_a))
     return(phi_e)
 
 #create function for phi_c sensible heat transfer
@@ -156,12 +161,47 @@ def calculate_phi_c(T_wk, day_argue, hour_period):
     daily_data = read_dataline(day_argue)
     wind_speed = daily_data['wind_speed_2m']
 
-    W = wind_speed * 3.6 # Convert ms-1 to Kmhr-1 #check units for all variables ask drew
+    W = float(wind_speed * 3.6) # Convert ms-1 to Kmhr-1 #check units for all variables ask drew
 
     air_temp_line = read_air_temp(day_argue, hour_period)
-    T_ak = air_temp_line['air_temp'] #already in kelvin
+    T_ak = air_temp_line['air_temp'] #kelvin
+    
+    T_wc = T_wk - 273.15 #convert to deg celcius
+    T_ac = T_ak - 273.15 
 
-    phi_c = 1.5701 * W * (T_wk-T_ak)
+    phi_c = float(1.5701 * W * (T_wc-T_ac))
 
     return(phi_c)
 
+############### Creating simulation loop for daily values #############################
+# Energy Flux equation: phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c   
+# Heat at t-1 time step: H_t_1 = T_wk * water_heat_capacity * water_density
+# Heat at t: H_t = H_t_1 + phi_net
+# T_w = H_t/ (water_heat_capacity * water_density)
+
+# loop for energy flux equation 
+
+for day_argue in list(range(1, 731)):
+                     
+    for hour_period in list(range(1,9)):
+        
+        phi_sn = calculate_phi_sn(day_argue, hour_period)
+        phi_at = calculate_phi_at(day_argue, hour_period)
+        phi_ws = calculate_phi_ws(T_wk, day_argue, hour_period)
+        phi_e = calculate_phi_e(T_wk, day_argue, hour_period)
+        phi_c = calculate_phi_c(T_wk, day_argue, hour_period)
+        
+        phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c 
+
+        print(phi_net)
+
+
+
+phi_sn = calculate_phi_sn(1, 3)
+phi_at = calculate_phi_at(1, 3)
+phi_ws = calculate_phi_ws(T_wk, 1, 3)
+phi_e = calculate_phi_e(T_wk, 1, 3)
+phi_c = calculate_phi_c(T_wk, 1, 3)
+        
+phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c
+    
