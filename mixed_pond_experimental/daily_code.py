@@ -41,7 +41,7 @@ time_of_day = np.arange(0,24,3) #array of 3 hourly windows in a day
 
 #open csv file using pandas to create pandas dataframe 
 data = pd.read_csv("input_data_for_simulation_2017_2019_khulna.csv") 
-air_temp_data = pd.read_csv("diurnal_air_temp_khulna.csv") 
+air_temp_data = pd.read_csv("diurnal_air_temp_khulna_daily.csv") 
 
 #create a function to get month and year based on integer sequence input
 #using package datetime makes it easier to get month, year (this is also dependant on the the way the data
@@ -67,26 +67,17 @@ def read_dataline(day_argue):
 #setting functions for energy variables in the energy flux equation
 #calculate phi_sn pr penetrating short-wae solar radiation
 
-def calculate_phi_sn(day_argue, hour_period):
+def calculate_phi_sn(day_argue):
     daily_data = read_dataline(day_argue)
     wind_speed = daily_data['wind_speed_2m']
     
-    lambda_value = lambda_s[hour_period] #remember hour period integer corresponds to lamba value
-    
+    R_s = 0.38 #considering constant value for daily code #Losordo&Piedrahita
 
-    if lambda_value == 0:
-            R_s = 0
-    else:
-            R_s = 2.2*((180*lambda_value)/pi)**(-0.97)
-        
-
-    W_z = wind_speed * 3.6
+    W_z = wind_speed #wind velocity in m/s
     
     R= R_s *(1-0.08 * W_z)
     
-    index = srad_names[hour_period-1]  #picking the hour index for 3 hour window units watts/m square
-    
-    phi_s = daily_data[index]  
+    phi_s = daily_data['SRAD']  #Kj/m2/hr
 
     phi_sn = float(phi_s * (1-R))
     
@@ -94,23 +85,20 @@ def calculate_phi_sn(day_argue, hour_period):
 
 #create function to open air_temp file for day month and year
 
-def read_air_temp(day_argue,hour_period):
+def read_air_temp(day_argue):
     day, day_mon_year = find_day_month_year(day_argue)
     year = day_mon_year.year
     
-    time = time_of_day[hour_period] 
-    
     selected_air_data = air_temp_data[(air_temp_data['day']== day) & (air_temp_data['year'] == year)]
-    selected_air_data = selected_air_data[(selected_air_data['time']== time)]        
-    return selected_air_data  
-
+  
+    return selected_air_data 
 
 #creating a function for phi_at atmospheric radiation following the equation in variables excel sheet
 #shammun includes cloud fraction in the equation
 
-def calculate_phi_at(day_argue, hour_period):
-    air_temp_line = read_air_temp(day_argue, hour_period)
-    T_ak = air_temp_line['air_temp'] #in kelvin
+def calculate_phi_at(day_argue):
+    air_temp_line = read_air_temp(day_argue)
+    T_ak = air_temp_line['avg_temp'] #in kelvin
     e = (0.398 * (10 ** (-5)))*(T_ak ** (2.148))
     r = 0.03 # reflectance of the water surface to longwave radiation
     phi_at = float((1-r)*e*sigma*((T_ak)**4))
@@ -121,7 +109,7 @@ def calculate_phi_at(day_argue, hour_period):
 #this equation need water surface temp T_wk (kelvin), this will be initialized using the t-1 timestep value
 # from the water temp data file (ideally Jan 1st 2018, morning water temp)
 
-def calculate_phi_ws(T_wk, day_argue, hour_period):
+def calculate_phi_ws(T_wk, day_argue):
     
 
 # set T_wk such that it reads the final output water temp from results in a loop
@@ -133,7 +121,7 @@ def calculate_phi_ws(T_wk, day_argue, hour_period):
 #create function for phi_e evaporative heat loss
 #here, we use average dailt dew point temp in place of relative humidity values
 
-def calculate_phi_e(T_wk,day_argue, hour_period):
+def calculate_phi_e(T_wk,day_argue):
     daily_data = read_dataline(day_argue)
     wind_speed = daily_data['wind_speed_2m']
 
@@ -157,14 +145,14 @@ def calculate_phi_e(T_wk,day_argue, hour_period):
 
 #create function for phi_c sensible heat transfer
 
-def calculate_phi_c(T_wk, day_argue, hour_period):
+def calculate_phi_c(T_wk, day_argue):
     daily_data = read_dataline(day_argue)
     wind_speed = daily_data['wind_speed_2m']
 
-    W = float(wind_speed * 3.6) # Convert ms-1 to Kmhr-1 #check units for all variables ask drew
+    W = float(wind_speed) #m/s per C&B paper
 
-    air_temp_line = read_air_temp(day_argue, hour_period)
-    T_ak = air_temp_line['air_temp'] #kelvin
+    air_temp_line = read_air_temp(day_argue)
+    T_ak = air_temp_line['avg_temp'] #kelvin
     
     T_wc = T_wk - 273.15 #convert to deg celcius
     T_ac = T_ak - 273.15 
