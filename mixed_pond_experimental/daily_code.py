@@ -41,7 +41,9 @@ time_of_day = np.arange(0,24,3) #array of 3 hourly windows in a day
 
 #open csv file using pandas to create pandas dataframe 
 data = pd.read_csv("input_data_for_simulation_2017_2019_khulna.csv") 
-air_temp_data = pd.read_csv("diurnal_air_temp_khulna_daily.csv") 
+air_temp_data = pd.read_csv("diurnal_air_temp_khulna_daily.csv") #this value is in kelvin
+relative_humidity = pd.read.csv("khulna_relativeHumidity_2m.csv") 
+
 
 #create a function to get month and year based on integer sequence input
 #using package datetime makes it easier to get month, year (this is also dependant on the the way the data
@@ -126,19 +128,22 @@ def calculate_phi_e(T_wk,day_argue):
     wind_speed = daily_data['wind_speed_2m']
 
     W_2 = wind_speed * 3.6
+    air_temp_line = read_air_temp(day_argue)
+    T_ak = air_temp_line['avg_temp'] #kelvin
+    T_ac = T_ak -273.15 #degree celcius
 
-    T_min_air = daily_data['min_temp']  #degree celcius
-
-    T_d = T_min_air - 2 # T_d is the average daily dew-point temperature.From page 235 of the Culberson paper.
-    T_d = T_d + 273.15 #kelvin
 # e_s, saturated vapor pressure needs to be in T_wc deg celcius
 
     T_wc = T_wk - 273.15
     e_s = 25.374 * math.exp(17.62 - 5271/T_wc)
+    
+    RH = relative_humidity[(relative_humidity['day']== day_argue)]
+
+    RH = RH['RH2M']
 
 # e_a, water vapor pressure above the pond surface; unit mmHg
-    e_a= 610.78 * math.exp(17.269 * ((T_d -273.16) / (T_d - 35.86)))
-          
+    
+    e_a = RH * 25.374 * math.exp(17.62 - 5271/T_ac)     
 
     phi_e = float(N* W_2 * (e_s- e_a))
     return(phi_e)
@@ -150,7 +155,7 @@ def calculate_phi_c(T_wk, day_argue):
     wind_speed = daily_data['wind_speed_2m']
 
     W = float(wind_speed) #m/s per C&B paper
-
+    
     air_temp_line = read_air_temp(day_argue)
     T_ak = air_temp_line['avg_temp'] #kelvin
     
