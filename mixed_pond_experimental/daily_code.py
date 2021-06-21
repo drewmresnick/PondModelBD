@@ -9,7 +9,7 @@ import numpy as np
 import datetime as dt
 import pandas as pd
 import math
-
+import matplotlib.pyplot as plt
 
 #Setting constant values 
 
@@ -20,6 +20,7 @@ water_heat_capacity = 4.184 #joules
 pond_depth = 1.5204 #meters
 water_density = 997 #kg/m3
 T_wk = 287.15 #first day water temp at khulna 
+T_wk_vec = []
 srad_names = ['SRAD00', 'SRAD03', 'SRAD06', 'SRAD09','SRAD12', 'SRAD15', 'SRAD18', 'SRAD21']
 
 # lambda, solar altitude angle
@@ -42,7 +43,7 @@ time_of_day = np.arange(0,24,3) #array of 3 hourly windows in a day
 #open csv file using pandas to create pandas dataframe 
 data = pd.read_csv("input_data_for_simulation_2017_2019_khulna.csv") 
 air_temp_data = pd.read_csv("diurnal_air_temp_khulna_daily.csv") #this value is in kelvin
-relative_humidity = pd.read.csv("khulna_relativeHumidity_2m.csv") 
+relative_humidity = pd.read_csv("khulna_relativeHumidity_2m.csv") 
 
 
 #create a function to get month and year based on integer sequence input
@@ -173,28 +174,40 @@ def calculate_phi_c(T_wk, day_argue):
 # T_w = H_t/ (water_heat_capacity * water_density)
 
 # loop for energy flux equation 
+def main_simulation_loop():
 
-for day_argue in list(range(1, 731)):
-                     
-    for hour_period in list(range(1,9)):
-        
-        phi_sn = calculate_phi_sn(day_argue, hour_period)
-        phi_at = calculate_phi_at(day_argue, hour_period)
-        phi_ws = calculate_phi_ws(T_wk, day_argue, hour_period)
-        phi_e = calculate_phi_e(T_wk, day_argue, hour_period)
-        phi_c = calculate_phi_c(T_wk, day_argue, hour_period)
-        
+    global T_wk
+    for day_argue in list(range(1, 1095)):
+
+        phi_sn = calculate_phi_sn(day_argue)
+        phi_at = calculate_phi_at(day_argue)
+        phi_ws = calculate_phi_ws(T_wk, day_argue)
+        phi_e = calculate_phi_e(T_wk, day_argue)
+        phi_c = calculate_phi_c(T_wk, day_argue)
+            
         phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c 
 
         print(phi_net)
 
+        H_t_1 = T_wk * water_heat_capacity * water_density
+
+        H_t = H_t_1 + phi_net
+        T_w = H_t/ (water_heat_capacity * water_density)
+
+        #add T_w to a list somehow
+        T_wk_vec.append(T_w)
+
+        T_wk = T_w 
+
+    print(T_wk_vec)
+
+    T_wk_C = np.asarray(T_wk_vec) - 273.15
+    print(T_wk_C)
+
+    plt.plot(T_wk_C)
+    plt.show()
 
 
-phi_sn = calculate_phi_sn(1, 3)
-phi_at = calculate_phi_at(1, 3)
-phi_ws = calculate_phi_ws(T_wk, 1, 3)
-phi_e = calculate_phi_e(T_wk, 1, 3)
-phi_c = calculate_phi_c(T_wk, 1, 3)
-        
-phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c
-    
+if __name__ == '__main__':
+    main_simulation_loop()
+                        
