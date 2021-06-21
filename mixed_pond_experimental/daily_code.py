@@ -201,8 +201,15 @@ def main_simulation_loop():
 
     print(T_wk_vec)
 
-    T_wk_C = np.asarray(T_wk_vec) - 273.15
+    T_wk_C = np.array(T_wk_vec) - 273.15
+    
     print(T_wk_C)
+    
+    df = pd.DataFrame(T_wk_C)
+    
+    df1= pd.concat([data, df], axis = 1)
+    
+    df1.to_csv('Water_temp_daily.csv',index=False)
 
     plt.plot(T_wk_C)
     plt.show()
@@ -210,4 +217,7 @@ def main_simulation_loop():
 
 if __name__ == '__main__':
     main_simulation_loop()
+    
+
+
                         
