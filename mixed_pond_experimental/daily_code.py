@@ -74,7 +74,7 @@ def calculate_phi_sn(day_argue):
     daily_data = read_dataline(day_argue)
     wind_speed = daily_data['wind_speed_2m']
     
-    R_s = 0.38 #considering constant value for daily code #Losordo&Piedrahita
+    R_s = 0.035 #considering constant value for daily code #Losordo&Piedrahita
 
     W_z = wind_speed #wind velocity in m/s
     
