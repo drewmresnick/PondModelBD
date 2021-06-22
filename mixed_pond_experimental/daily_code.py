@@ -19,7 +19,7 @@ N = 5.0593 ##empirical coefficient unit m^-2km^-1 mmHg^-1
 water_heat_capacity = 4.184 #joules
 pond_depth = 1.5204 #meters
 water_density = 997 #kg/m3
-T_wk = 287.15 #first day water temp at khulna 
+T_wk = 289.15 #first day water temp at khulna 
 T_wk_vec = []
 srad_names = ['SRAD00', 'SRAD03', 'SRAD06', 'SRAD09','SRAD12', 'SRAD15', 'SRAD18', 'SRAD21']
 
