@@ -177,7 +177,7 @@ def calculate_phi_c(T_wk, day_argue):
 def main_simulation_loop():
 
     global T_wk
-    for day_argue in list(range(1, 1095)):
+    for day_argue in list(range(1, 1096)):
 
         phi_sn = calculate_phi_sn(day_argue)
         phi_at = calculate_phi_at(day_argue)
@@ -220,4 +220,3 @@ if __name__ == '__main__':
     
 
 
-                        
