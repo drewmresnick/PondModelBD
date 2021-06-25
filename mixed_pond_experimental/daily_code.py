@@ -20,7 +20,7 @@ water_heat_capacity = 4.184 #joules
 pond_depth = 1.5204 #meters
 water_density = 997 #kg/m3
 T_wk = 289.15 #first day water temp at khulna 
-T_wk_vec = []
+T_wC_vec = []
 srad_names = ['SRAD00', 'SRAD03', 'SRAD06', 'SRAD09','SRAD12', 'SRAD15', 'SRAD18', 'SRAD21']
 
 # lambda, solar altitude angle
@@ -189,29 +189,29 @@ def main_simulation_loop():
 
         print(phi_net)
 
-        H_t_1 = T_wk * water_heat_capacity * water_density
+        T_wC = T_wk - 273.15 #change to degree celcius
+
+        H_t_1 = T_wC * water_heat_capacity * water_density
 
         H_t = H_t_1 + phi_net
         T_w = H_t/ (water_heat_capacity * water_density)
 
         #add T_w to a list somehow
-        T_wk_vec.append(T_w)
+        T_wC_vec.append(T_w)
 
-        T_wk = T_w 
+        T_wk = T_w + 273.15 #convert back to kelvin
 
-    print(T_wk_vec)
-
-    T_wk_C = np.array(T_wk_vec) - 273.15
+    print(T_wC_vec)
     
-    print(T_wk_C)
-    
-    df = pd.DataFrame(T_wk_C)
+    T_wC = np.array(T_wC_vec)
+
+    df = pd.DataFrame(T_wC)
     
     df1= pd.concat([data, df], axis = 1)
     
     df1.to_csv('Water_temp_daily.csv',index=False)
 
-    plt.plot(T_wk_C)
+    plt.plot(T_wC)
     plt.show()
 
 
