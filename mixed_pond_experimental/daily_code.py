@@ -99,6 +99,7 @@ def read_air_temp(day_argue):
 #creating a function for phi_at atmospheric radiation following the equation in variables excel sheet
 #shammun includes cloud fraction in the equation
 
+
 def calculate_phi_at(day_argue):
     air_temp_line = read_air_temp(day_argue)
     T_ak = air_temp_line['avg_temp'] #in kelvin
