@@ -177,7 +177,12 @@ def calculate_phi_c(T_wk, day_argue):
 def main_simulation_loop():
 
     global T_wk
+    count = 0
     for day_argue in list(range(1, 1096)):
+        
+        count = count + 1
+
+        print(f"Iteration {count} start - T_wk: {T_wk}")
 
         phi_sn = calculate_phi_sn(day_argue)
         phi_at = calculate_phi_at(day_argue)
@@ -200,6 +205,7 @@ def main_simulation_loop():
         T_wC_vec.append(T_w)
 
         T_wk = T_w + 273.15 #convert back to kelvin
+
 
     print(T_wC_vec)
     
