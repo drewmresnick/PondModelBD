@@ -22,6 +22,9 @@ water_density = 997 #kg/m3
 T_wk = 289.15 #first day water temp at khulna 
 T_wC_vec = []
 srad_names = ['SRAD00', 'SRAD03', 'SRAD06', 'SRAD09','SRAD12', 'SRAD15', 'SRAD18', 'SRAD21']
+volume = 6153.05 #m3
+area = 4047 #m2
+t = 24 #hrs
 
 # lambda, solar altitude angle
 #for lambda install and import package pysolar to use function solar.get_altitude
@@ -72,7 +75,7 @@ def read_dataline(day_argue):
 
 def calculate_phi_sn(day_argue):
     daily_data = read_dataline(day_argue)
-    wind_speed = daily_data['wind_speed_2m']
+    wind_speed = float(daily_data['WS2M'])
     
     R_s = 0.035 #considering constant value for daily code #Losordo&Piedrahita
 
@@ -80,9 +83,9 @@ def calculate_phi_sn(day_argue):
     
     R= R_s *(1-0.08 * W_z)
     
-    phi_s = daily_data['SRAD']  #Kj/m2/hr
+    phi_s = float(daily_data['SRAD'])  #Kj/m2/hr
 
-    phi_sn = float(phi_s * (1-R))
+    phi_sn = phi_s * (1-R)
     
     return phi_sn
 
@@ -102,10 +105,10 @@ def read_air_temp(day_argue):
 
 def calculate_phi_at(day_argue):
     air_temp_line = read_air_temp(day_argue)
-    T_ak = air_temp_line['avg_temp'] #in kelvin
+    T_ak = float(air_temp_line['avg_temp']) #in kelvin
     e = (0.398 * (10 ** (-5)))*(T_ak ** (2.148))
     r = 0.03 # reflectance of the water surface to longwave radiation
-    phi_at = float((1-r)*e*sigma*((T_ak)**4))
+    phi_at = (1-r)*e*sigma*((T_ak)**4)
 
     return(phi_at)
 
@@ -118,7 +121,7 @@ def calculate_phi_ws(T_wk, day_argue):
 
 # set T_wk such that it reads the final output water temp from results in a loop
     
-    phi_ws = float(0.97 * sigma * ((T_wk)**4))
+    phi_ws = 0.97 * sigma * ((T_wk)**4)
 
     return(phi_ws)
 
@@ -127,21 +130,22 @@ def calculate_phi_ws(T_wk, day_argue):
 
 def calculate_phi_e(T_wk,day_argue):
     daily_data = read_dataline(day_argue)
-    wind_speed = daily_data['wind_speed_2m']
+    wind_speed = float(daily_data['WS2M'])
 
     W_2 = wind_speed * 3.6
     air_temp_line = read_air_temp(day_argue)
-    T_ak = air_temp_line['avg_temp'] #kelvin
+    T_ak = float(air_temp_line['avg_temp']) #kelvin
     T_ac = T_ak -273.15 #degree celcius
 
 # e_s, saturated vapor pressure needs to be in T_wc deg celcius
 
     T_wc = T_wk - 273.15
+    
     e_s = 25.374 * math.exp(17.62 - 5271/T_wc)
     
     RH = relative_humidity[(relative_humidity['day']== day_argue)]
 
-    RH = RH['RH2M']
+    RH = float(RH['RH2M'])
 
 # e_a, water vapor pressure above the pond surface; unit mmHg
     
@@ -154,12 +158,12 @@ def calculate_phi_e(T_wk,day_argue):
 
 def calculate_phi_c(T_wk, day_argue):
     daily_data = read_dataline(day_argue)
-    wind_speed = daily_data['wind_speed_2m']
+    wind_speed = daily_data['WS2M']
 
     W = float(wind_speed) #m/s per C&B paper
     
     air_temp_line = read_air_temp(day_argue)
-    T_ak = air_temp_line['avg_temp'] #kelvin
+    T_ak = float(air_temp_line['avg_temp']) #kelvin
     
     T_wc = T_wk - 273.15 #convert to deg celcius
     T_ac = T_ak - 273.15 
@@ -176,36 +180,47 @@ def calculate_phi_c(T_wk, day_argue):
 
 # loop for energy flux equation 
 def main_simulation_loop():
-
+    
     global T_wk
     count = 0
     for day_argue in list(range(1, 1096)):
+        
         
         count = count + 1
 
         print(f"Iteration {count} start - T_wk: {T_wk}")
 
         phi_sn = calculate_phi_sn(day_argue)
+        print(f'phi_sn: {phi_sn}')
         phi_at = calculate_phi_at(day_argue)
+        print(f'phi_at: {phi_at}')
         phi_ws = calculate_phi_ws(T_wk, day_argue)
+        print(f'phi_ws: {phi_ws}')  
         phi_e = calculate_phi_e(T_wk, day_argue)
+        print(f'phi_e: {phi_e}')
         phi_c = calculate_phi_c(T_wk, day_argue)
-            
+        print(f'phi_c: {phi_c}')
+        
         phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c 
 
-        print(phi_net)
+        print(f'iteration: {count}, phi_net: {phi_net}')
+        
+        T_wC = T_wk - 273.15 #change to degree celcius   
 
-        T_wC = T_wk - 273.15 #change to degree celcius
 
-        H_t_1 = T_wC * water_heat_capacity * water_density
+        H_t_1 = T_wC * volume * water_heat_capacity * water_density
+        #check if K or C
+        print(f'iteration: {count}, H_t_1: {H_t_1}')
 
-        H_t = H_t_1 + phi_net
-        T_w = H_t/ (water_heat_capacity * water_density)
+        H_t = H_t_1 + (phi_net * area * t)
+        T_w = T_wC + H_t/ (volume * water_heat_capacity * water_density)
+        print(f'iteration: {count}, T_w: {T_w}')
 
         #add T_w to a list somehow
         T_wC_vec.append(T_w)
 
         T_wk = T_w + 273.15 #convert back to kelvin
+        print(T_wk)
 
 
     print(T_wC_vec)
@@ -214,7 +229,7 @@ def main_simulation_loop():
 
     df = pd.DataFrame(T_wC)
     
-    df1= pd.concat([data, df], axis = 1)
+    df1= pd.concat([air_temp_data, df], axis = 1)
     
     df1.to_csv('Water_temp_daily.csv',index=False)
 
@@ -225,5 +240,3 @@ def main_simulation_loop():
 if __name__ == '__main__':
     main_simulation_loop()
     
-
-
