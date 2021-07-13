@@ -44,6 +44,7 @@ time_of_day = np.arange(0,24,3) #array of 3 hourly windows in a day
 data = pd.read_csv("input_data_for_simulation_2017_2019_khulna.csv") 
 air_temp_data = pd.read_csv("diurnal_air_temp_khulna_daily.csv") #this value is in kelvin
 relative_humidity = pd.read_csv("khulna_relativeHumidity_2m.csv") 
+observed = pd.read_csv("observed_khulna.csv")
 
 
 #create a function to get month and year based on integer sequence input
@@ -217,8 +218,11 @@ def main_simulation_loop():
     df1= pd.concat([data, df], axis = 1)
     
     df1.to_csv('Water_temp_daily.csv',index=False)
-
-    plt.plot(T_wC)
+    
+    plt.plot(observed.days_numbered, observed.avg_air_temp, label="Observed air temp")
+    plt.plot(observed.days_numbered, observed.avg_water_temp, label="Observed water temp")
+    plt.plot(T_wC, label="Modelled water temp")
+    plt.legend()
     plt.show()
 
 
