@@ -48,7 +48,6 @@ data = pd.read_csv("input_data_for_simulation_2017_2019_khulna.csv")
 air_temp_data = pd.read_csv("diurnal_air_temp_khulna_daily.csv") #this value is in kelvin
 relative_humidity = pd.read_csv("khulna_relativeHumidity_2m.csv") 
 
-
 #create a function to get month and year based on integer sequence input
 #using package datetime makes it easier to get month, year (this is also dependant on the the way the data
 # file is set up)
@@ -213,7 +212,7 @@ def main_simulation_loop():
         print(f'iteration: {count}, H_t_1: {H_t_1}')
 
         H_t = H_t_1 + (phi_net * area * t)
-        T_w = T_wC + H_t/ (volume * water_heat_capacity * water_density)
+        T_w = H_t/ (volume * water_heat_capacity * water_density)
         print(f'iteration: {count}, T_w: {T_w}')
 
         #add T_w to a list somehow
@@ -221,6 +220,7 @@ def main_simulation_loop():
 
         T_wk = T_w + 273.15 #convert back to kelvin
         print(T_wk)
+
 
 
     print(T_wC_vec)
@@ -239,4 +239,6 @@ def main_simulation_loop():
 
 if __name__ == '__main__':
     main_simulation_loop()
+    
+
     
