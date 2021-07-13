@@ -29,12 +29,13 @@ SRAD = 15.4618
 Rh = 76.211
 volume = 6153.05 #m3
 area = 4047 #m2
-t = 24 #hrs
+t = 24 #day or 24 hrs
 
 #open csv file using pandas to create pandas dataframe 
 
 air_temp_data = pd.read_csv("diurnal_air_temp_khulna_daily.csv") #this value is in kelvin
-
+data = pd.read_csv("input_data_sensitivity.csv")
+watertemp = pd.read_csv('Realtime_watertemp.csv')
 #create a function to get month and year based on integer sequence input
 #using package datetime makes it easier to get month, year (this is also dependant on the the way the data
 # file is set up)
@@ -148,10 +149,12 @@ def calculate_phi_c(T_wk, day_argue):
 # Heat at t: H_t = H_t_1 + (phi_net * area * t)
 # T_w = T_wc + H_t/ (volume * water_heat_capacity * water_density)
 
+
 # loop for energy flux equation 
 def main_simulation_loop():
     
     global T_wk
+
     count = 0
     for day_argue in list(range(1, 1096)):
         
@@ -181,9 +184,12 @@ def main_simulation_loop():
         H_t_1 = T_wC * volume * water_heat_capacity * water_density
         #check if K or C
         print(f'iteration: {count}, H_t_1: {H_t_1}')
-
         H_t = H_t_1 + (phi_net * area * t)
-        T_w = T_wC + H_t/ (volume * water_heat_capacity * water_density)
+
+        
+        #T_wC_o = 26.5
+        
+        T_w =  H_t/ (volume * water_heat_capacity * water_density)
         print(f'iteration: {count}, T_w: {T_w}')
 
         #add T_w to a list somehow
@@ -191,8 +197,8 @@ def main_simulation_loop():
 
         T_wk = T_w + 273.15 #convert back to kelvin
         print(T_wk)
-
-
+        
+    
     print(T_wC_vec)
     
     T_wC = np.array(T_wC_vec)
@@ -204,7 +210,10 @@ def main_simulation_loop():
     df1.to_csv('Water_temp_daily.csv',index=False)
 
     plt.plot(T_wC)
+    plt.plot(data['degC_avg'])
+    plt.plot(watertemp['day_avg'])
     plt.show()
+
 
 
 if __name__ == '__main__':
