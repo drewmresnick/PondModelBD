@@ -205,13 +205,15 @@ def main_simulation_loop():
 
     df = pd.DataFrame(T_wC)
     
+    
     df1= pd.concat([air_temp_data, df], axis = 1)
     
     df1.to_csv('Water_temp_daily.csv',index=False)
 
-    plt.plot(T_wC)
-    plt.plot(data['degC_avg'])
-    plt.plot(watertemp['day_avg'])
+    plt.plot(T_wC, label = 'Simulated Water temp')
+    plt.plot(data['degC_avg'], label = 'Observed Air temp')
+    plt.plot(watertemp['day_avg'], label = 'Observed Water temp')
+    plt.gca().legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
 
 
