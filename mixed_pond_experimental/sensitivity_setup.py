@@ -31,10 +31,12 @@ volume = 6153.05 #m3
 area = 4047 #m2
 t = 24 #day or 24 hrs
 
+
 #open csv file using pandas to create pandas dataframe 
 
 air_temp_data = pd.read_csv("diurnal_air_temp_khulna_daily.csv") #this value is in kelvin
 data = pd.read_csv("input_data_sensitivity.csv")
+relative_humidity = pd.read_csv("khulna_relativeHumidity_2m.csv") 
 watertemp = pd.read_csv('Realtime_watertemp.csv')
 #create a function to get month and year based on integer sequence input
 #using package datetime makes it easier to get month, year (this is also dependant on the the way the data
