@@ -135,13 +135,11 @@ def calculate_phi_e(T_wk,day_argue):
     W_2 = wind_speed * 3.6
     air_temp_line = read_air_temp(day_argue)
     T_ak = float(air_temp_line['avg_temp']) #kelvin
-    T_ac = T_ak -273.15 #degree celcius
+    #T_ac = T_ak -273.15 #degree celcius
 
 # e_s, saturated vapor pressure needs to be in T_wc deg celcius
 
-    T_wc = T_wk - 273.15
-    
-    e_s = 25.374 * math.exp(17.62 - 5271/T_wc)
+    e_s = 25.374 * math.exp(17.62 - 5271/T_wk)
     
     RH = relative_humidity[(relative_humidity['day']== day_argue)]
 
@@ -149,7 +147,7 @@ def calculate_phi_e(T_wk,day_argue):
 
 # e_a, water vapor pressure above the pond surface; unit mmHg
     
-    e_a = RH * 25.374 * math.exp(17.62 - 5271/T_ac)     
+    e_a = RH * 25.374 * math.exp(17.62 - 5271/T_ak)     
 
     phi_e = float(N* W_2 * (e_s- e_a))
     return(phi_e)

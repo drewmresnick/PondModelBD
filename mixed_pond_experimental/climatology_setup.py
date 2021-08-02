@@ -23,9 +23,9 @@ water_density = 997 #kg/m3
 T_wk = 289.15 #first day water temp at khulna 
 T_wC_vec = []
 srad_names = ['SRAD00', 'SRAD03', 'SRAD06', 'SRAD09','SRAD12', 'SRAD15', 'SRAD18', 'SRAD21']
-W_z = 2.88 #m/s
-SRAD = 4.61
-Rh = 72.44
+#W_z = 2.88 #m/s
+#SRAD = 4.61
+#Rh = 72.44
 volume = 6153.05 #m3
 area = 4047 #m2
 t = 24 #day or 24 hrs
@@ -61,12 +61,17 @@ def read_dataline(day_argue):
 
 def calculate_phi_sn(day_argue):
     print(day_argue)
+    W_z = climatology[(climatology['time']== day_argue)]
+    W_z = float(W_z['WS10M'])
+    
    
     R_s = 0.035 #considering constant value for daily code #Losordo&Piedrahita
 
     R= R_s *(1-0.08 * W_z)
+    phi_s = climatology[(climatology['time']== day_argue)]
+    phi_s = float(phi_s['ALLSKY_SFC_SW_DWN'])
     
-    phi_s = SRAD  #Kj/m2/hr
+    #phi_s = SRAD  #Kj/m2/hr
 
     phi_sn = phi_s * (1-R)
     
@@ -118,6 +123,8 @@ def calculate_phi_ws(T_wk, day_argue):
 
 def calculate_phi_e(T_wk,day_argue):
     print(T_wk)
+    W_z = climatology[(climatology['time']== day_argue)]
+    W_z = float(W_z['WS10M'])
 
     W_2 = W_z * 3.6
     #air_temp_line = read_air_temp(day_argue)
@@ -129,6 +136,7 @@ def calculate_phi_e(T_wk,day_argue):
     T_wc = T_wk - 273.15
     e_s = 25.374 * math.exp(17.62 - 5271/T_wc)
     RH = climatology[(climatology['time']== day_argue)]
+    
 
     RH = float(RH['RH2M'])
 
@@ -142,6 +150,8 @@ def calculate_phi_e(T_wk,day_argue):
 #create function for phi_c sensible heat transfer
 
 def calculate_phi_c(T_wk, day_argue):
+    W_z = climatology[(climatology['time']== day_argue)]
+    W_z = float(W_z['WS10M'])
    
     #air_temp_line = read_air_temp(day_argue)
     
