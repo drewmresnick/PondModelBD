@@ -140,7 +140,7 @@ def calculate_Qevap(day_argue):
     Mw = 0.018 #kg/mol
     
     me = K *((Pw/T_wk) - ((RH*Pa)/T_a)) *(Mw/R)
-
+ 
     SA = 4047 #m2 area
     Qevap = -me * Lw * SA 
     
