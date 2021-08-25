@@ -17,16 +17,15 @@ import numpy as np
 import datetime as dt
 import pandas as pd
 import math
+import cmath
 import matplotlib.pyplot as plt
 
 #Setting constant values 
 
-
-water_heat_capacity = 4.184 #joules
 pond_depth = 1.5204 #meters
 water_density = 997 #kg/m3
 T_wk = 287.51 #first day water temp at khulna 
-T_wC_vec = []
+T_wk_vec = []
 
 specific_heat = 4.18 * (10**3)
 Volume = 6153.05 #m3
@@ -80,7 +79,7 @@ def calculate_Qrap(T_wk):
     
     #roh = roh1 #joule/hr*m2*K4
     SA = 4047 #m2 area
-    Qrap = -ew * roh1 * SA * (T_wk**4)
+    Qrap = -ew * roh1 * SA * (T_wk**4) *3600
     
     return Qrap
 
@@ -91,12 +90,12 @@ def calculate_Qras(day_argue, hour):
     daily_data = read_dataline(day_argue, hour)
     solrad = float(daily_data['SRAD'])
     
-    fa = 2.5 #% algae absorption
+    fa = 0 #% algae absorption
 
     Hs =  solrad #* 3600 #solar radiation W/m2 or joule/second*m2
     
     SA = 4047 #m2 area
-    Qras = (1-fa) * Hs* SA
+    Qras = (1-fa) * Hs* SA *3600
     
     return Qras
 
@@ -117,14 +116,14 @@ def calculate_Qraa(day_argue, hour):
 
     
     SA = 4047 #m2 area
-    Qraa = ew * ea* roh1* (T_a**4) * SA
+    Qraa = ew * ea* roh1* (T_a**4) * SA *3600
     
     return Qraa
 
 #evaporation
 #Qevap = -meLwS 
 
-def calculate_Qevap(day_argue, hour):
+def calculate_Qevap(day_argue, hour,T_wk):
     daily_data = read_dataline(day_argue, hour)
     T_a = float(daily_data['T2M']) +273.15#kelvin
     RH = float(daily_data['RH2M'])
@@ -133,23 +132,27 @@ def calculate_Qevap(day_argue, hour):
     Lw = 2.45 * (10**6) #water latent heat J/kg 
     #this is site specific check with Drew
     Dw = 2.4 * (10**-5) #*3600 #m/s 
+
     l = 63.61#pond length in m
     va = 1.5 *(10**-5) #*3600  #m2/s
     
     Rel = (l*v)/va
-    SH= (math.sqrt(0.035 * (Rel**0.8)))**3
+    
+    Sch = va/Dw
+    
+    SH= 0.035 * (Rel**0.8) * (Sch**1/3)
     
     K = (SH * Dw)/l
     
-    R = 8.314 #Pa m3/mol K                
-    Pw = 998 #kg/m3
-    Pa = 1.9 * (10**3) #kg/m3
+    R = 8.314 # m3/mol K                
+    Pw = 3385.5 * cmath.exp(-8.0929+0.97608*((T_wk +42.607 -273.15)**0.5))
+    Pa = 3385.5 * cmath.exp(-8.0929+0.97608*((T_a +42.607 -273.15)**0.5))
     Mw = 0.018 #kg/mol
     
     me = K *((Pw/T_wk) - ((RH*Pa)/T_a)) *(Mw/R)
  
     SA = 4047 #m2 area
-    Qevap = -me * Lw * SA 
+    Qevap = -me * Lw * SA *3600
     
     return Qevap
 
@@ -174,7 +177,7 @@ def calculate_Qconv(day_argue, hour):
     h = lambda_a * Nu / l
     SA = 4047 #m2 area
     
-    Qconv = h * (T_a-T_wk)* SA
+    Qconv = h * (T_a-T_wk)* SA *3600
    
     return Qconv
 
@@ -182,7 +185,7 @@ def calculate_Qconv(day_argue, hour):
 #Qi = water_density *specific_heat * inflow_rate (Ti - T_wk)
 def calculate_Qi(day_argue, hour):
     qi = 1.5 * (10**-5)
-    Qi = water_density *specific_heat * qi * T_wk #(Ti - T_wk)
+    Qi = water_density *specific_heat * qi * T_wk *3600#(Ti - T_wk)
    
     return Qi
 
@@ -205,7 +208,7 @@ def main_simulation_loop():
             print(f'Qras: {Qras}')
             Qraa = calculate_Qraa(day_argue, hour)
             print(f'Qraa: {Qraa}')  
-            Qevap = calculate_Qevap(day_argue, hour)
+            Qevap = calculate_Qevap(day_argue, hour,T_wk)
             print(f'Qevap: {Qevap}')
             Qconv = calculate_Qconv(day_argue, hour)
             print(f'Qconv: {Qconv}')
@@ -215,34 +218,34 @@ def main_simulation_loop():
             
             print(f'iteration: {count}, Qnet: {Qnet}')
             
-            T_wC = T_wk - 273.15 #change to degree celcius 
+            #T_wC = T_wk - 273.15 #change to degree celcius 
             
             rate_temp =Qnet / (water_density * Volume * specific_heat) 
+            print(f'iteration: {count}, rate_temp: {rate_temp}')
             
-            T_wC_new = T_wC + rate_temp
+            T_wk_new = rate_temp *24  #T_wk + (rate_temp * 1)
 
-
-            print(f'iteration: {count}, T_wC_new: {T_wC_new}')
-    
             
             #add T_w to a list somehow
-            T_wC_vec.append(T_wC_new)
+            T_wk_vec.append(T_wk_new)
     
-            T_wk = T_wC_new + 273.15 #convert back to kelvin
-            print(T_wk)
+            T_wk = T_wk_new 
+            print(f'iteration: {count}, T_wk: {T_wk}')
 
 
-    print(T_wC_vec)
+    print(T_wk_vec)
     
-    T_wC = np.array(T_wC_vec)
+    
+    T_wK = np.array(T_wk_vec)
 
-    df = pd.DataFrame(T_wC)
+
+    df = pd.DataFrame(T_wK)
     
     df1= pd.concat([data, df], axis = 1)
     
     df1.to_csv('simulated_hourly.csv',index=False)
 
-    plt.plot(T_wC)
+    plt.plot(T_wK)
     plt.show()
 
 
