@@ -47,7 +47,8 @@ time_of_day = np.arange(0,24,3) #array of 3 hourly windows in a day
 data = pd.read_csv("input_data_for_simulation_2017_2019_khulna.csv") 
 air_temp_data = pd.read_csv("diurnal_air_temp_khulna_daily.csv") #this value is in kelvin
 relative_humidity = pd.read_csv("khulna_relativeHumidity_2m.csv") 
-
+watertemp = pd.read_csv('Realtime_watertemp.csv')
+data2 = pd.read_csv("input_data_sensitivity.csv")
 #create a function to get month and year based on integer sequence input
 #using package datetime makes it easier to get month, year (this is also dependant on the the way the data
 # file is set up)
@@ -134,13 +135,11 @@ def calculate_phi_e(T_wk,day_argue):
     W_2 = wind_speed * 3.6
     air_temp_line = read_air_temp(day_argue)
     T_ak = float(air_temp_line['avg_temp']) #kelvin
-    T_ac = T_ak -273.15 #degree celcius
+    #T_ac = T_ak -273.15 #degree celcius
 
 # e_s, saturated vapor pressure needs to be in T_wc deg celcius
 
-    T_wc = T_wk - 273.15
-    
-    e_s = 25.374 * math.exp(17.62 - 5271/T_wc)
+    e_s = 25.374 * math.exp(17.62 - 5271/T_wk)
     
     RH = relative_humidity[(relative_humidity['day']== day_argue)]
 
@@ -148,7 +147,7 @@ def calculate_phi_e(T_wk,day_argue):
 
 # e_a, water vapor pressure above the pond surface; unit mmHg
     
-    e_a = RH * 25.374 * math.exp(17.62 - 5271/T_ac)     
+    e_a = RH * 25.374 * math.exp(17.62 - 5271/T_ak)     
 
     phi_e = float(N* W_2 * (e_s- e_a))
     return(phi_e)
@@ -233,8 +232,12 @@ def main_simulation_loop():
     
     df1.to_csv('Water_temp_daily.csv',index=False)
 
-    plt.plot(T_wC)
+    plt.plot(T_wC, label = 'Simulated Water temp')
+    plt.plot(data2['degC_avg'], label = 'Observed Air temp')
+    plt.plot(watertemp['day_avg'], label = 'Observed Water temp')
+    plt.gca().legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
+
 
 
 if __name__ == '__main__':
