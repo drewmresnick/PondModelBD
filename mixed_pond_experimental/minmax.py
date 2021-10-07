@@ -77,6 +77,7 @@ def calculate_phi_sn(day_argue):
     
     return phi_sn
 
+
 #create function to open air_temp file for day month and year
 
 #creating a function for phi_at atmospheric radiation following the equation in variables excel sheet
@@ -202,7 +203,7 @@ def main_simulation_loop():
         #print(f'iteration: {count}, H_t_1: {H_t_1}')
 
         #H_t = H_t_1 + (phi_net * area)
-        T_w = T_wc_0 + (((T_wC * volume * water_heat_capacity * water_density)+(phi_net * area))/ (volume * water_heat_capacity * water_density))
+        T_w = T_wc_0 + ((phi_net * area)/ (volume * water_heat_capacity * water_density))
                     
         print(f'iteration: {count}, T_w: {T_w}')
 
@@ -245,15 +246,14 @@ def calculate_phi_sn(day_argue):
     
     R_s = 0.035 #considering constant value for daily code #Losordo&Piedrahita
 
-    W_z = wind_speed #wind velocity in m/s
+    W_z = wind_speed  #wind velocity in m/s
     
     R= R_s *(1-0.08 * W_z)
     
-    phi_s = float(daily_data['SRAD_kj'])  #Kj/m2/hr
+    phi_s = float(daily_data['SRAD_kj'])  #Kj/day
 
     phi_sn = phi_s * (1-R)
     
-    phi_sn = phi_sn*24 #convert to day
     
     return phi_sn
 
@@ -267,12 +267,11 @@ def calculate_phi_at(day_argue):
     daily_data = read_dataline(day_argue)
     
     T_ak = float(daily_data['air_max']) +273.15
-    #e = (0.398 * (10 ** (-5)))*(T_ak ** (2.148))
-    e = 0.97
+    e = (0.398 * (10 ** (-5)))*(T_ak ** (2.148))
+
     r = 0.035 # reflectance of the water surface to longwave radiation
     phi_at = (1-r)*e*sigma*((T_ak)**4)
     
-    phi_at = phi_at *24
 
     return(phi_at)
 
@@ -287,7 +286,7 @@ def calculate_phi_ws(T_wk, day_argue):
     
     phi_ws = 0.97 * sigma * ((T_wk)**4)
     
-    phi_ws = phi_ws *24
+
 
     return(phi_ws)
 
@@ -298,7 +297,7 @@ def calculate_phi_e(T_wk,day_argue):
     daily_data = read_dataline(day_argue)
     wind_speed = float(daily_data['WS2M'])
 
-    W_2 = wind_speed * 3.6
+    W_2 = wind_speed 
     
 
     T_ak = float(daily_data['air_max']) +273.15
@@ -318,7 +317,7 @@ def calculate_phi_e(T_wk,day_argue):
 
     phi_e = float(N* W_2 * (e_s- e_a))
     
-    phi_e = phi_e *24
+    
     
     return(phi_e)
 
@@ -328,7 +327,7 @@ def calculate_phi_c(T_wk, day_argue):
     daily_data = read_dataline(day_argue)
     wind_speed = daily_data['WS2M']
 
-    W = float(wind_speed) #m/s per C&B paper
+    W = float(wind_speed)  #m/s per C&B paper
     
     T_ac = float(daily_data['air_max'])
     
@@ -336,7 +335,7 @@ def calculate_phi_c(T_wk, day_argue):
     
     phi_c = float(1.5701 * W * (T_wc-T_ac))
     
-    phi_c = phi_c *24
+ 
 
     return(phi_c)
 
@@ -371,19 +370,20 @@ def main_simulation_loop():
         
         phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c 
         
-        
+       
 
         print(f'iteration: {count}, phi_net: {phi_net}')
         
         T_wC = T_wk - 273.15 #change to degree celcius   
 
 
-        H_t_1 = T_wC * volume * water_heat_capacity * water_density
+        #H_t_1 = T_wC * volume * water_heat_capacity * water_density
         #check if K or C
-        print(f'iteration: {count}, H_t_1: {H_t_1}')
+        #print(f'iteration: {count}, H_t_1: {H_t_1}')
 
-        H_t = H_t_1 + (phi_net * area *t )
-        T_w = H_t/ (volume * water_heat_capacity * water_density)
+        #H_t = H_t_1 + (phi_net * area)
+        T_w = T_wc_0 + ((phi_net * area)/ (volume * water_heat_capacity * water_density))
+                    
         print(f'iteration: {count}, T_w: {T_w}')
 
         #add T_w to a list somehow
@@ -405,8 +405,8 @@ def main_simulation_loop():
     #df1.to_csv('Water_temp_daily.csv',index=False)
 
     plt.plot(T_wC, label = 'Simulated Water temp')
-    plt.plot(observedtemp['min_air_temp_khu'], label = 'Observed Minimum Air temp')
-    plt.plot(observedtemp['morning_water_temp_khu'], label = 'Observed Minimum Water temp')
+    plt.plot(observedtemp['max_air_temp_khu'], label = 'Observed Maximum Air temp')
+    plt.plot(observedtemp['afternoon_water_temp_khu'], label = 'Observed Maximum Water temp')
     plt.gca().legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
 
@@ -414,3 +414,4 @@ def main_simulation_loop():
 
 if __name__ == '__main__':
     main_simulation_loop()
+    
