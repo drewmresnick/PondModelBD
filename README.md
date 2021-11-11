@@ -6,6 +6,14 @@ Reach out to Drew Resnick (drewr@iri.columbia.edu) for access to input data.
 Not all the files in this folder are up-to-date. The two main working files are briefly
 outlines below.
 
+**python packages required:**
+1. pandas
+2. matplotlib
+3. cftime
+4. datetime
+5. math
+6. numpy
+
 1. Bechet_model.py (file to run the model)
 
     Model elements:
