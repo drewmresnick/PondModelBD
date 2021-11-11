@@ -75,7 +75,7 @@ def read_dataline(day_argue):
 
 def calculate_phi_sn(day_argue):
     daily_data = read_dataline(day_argue)
-    wind_speed = float(daily_data['WS2M'])
+    wind_speed = daily_data['WS2M']
     
     R_s = 0.035 #considering constant value for daily code #Losordo&Piedrahita
 
