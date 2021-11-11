@@ -1,5 +1,7 @@
 # PondModelBD
-Repository for building energy flux model for pond aquaculture in Bangladesh
+Repository for building energy flux model for pond aquaculture in Bangladesh.
+
+Reach out to Drew Resnick (drewr@iri.columbia.edu) for access to input data.
 
 Not all the files in this folder are up-to-date. The two main working files are briefly
 outlines below.
