@@ -42,18 +42,18 @@ time_of_day = np.arange(0,24,3) #array of 3 hourly windows in a day
 
 #reading in input csv file as array (question for drew: let me know if you want to work with dataframe instead)
 # I separated the two districts into two files for ease for now, not sure if we want to keep them together
-
+filesPath = input("Input file path to where data files are located: ")
 #open csv file using pandas to create pandas dataframe 
-data = pd.read_csv("input_data_for_simulation_2017_2019_khulna.csv") 
-air_temp_data = pd.read_csv("diurnal_air_temp_khulna_daily.csv") #this value is in kelvin
-relative_humidity = pd.read_csv("khulna_relativeHumidity_2m.csv") 
-watertemp = pd.read_csv('Realtime_watertemp.csv')
-data2 = pd.read_csv("input_data_sensitivity.csv")
+data = pd.read_csv(f"{filesPath}input_data_for_simulation_2018_2019_khulna.csv") 
+air_temp_data = pd.read_csv(f"{filesPath}diurnal_air_temp_khulna_daily.csv") #this value is in kelvin
+relative_humidity = pd.read_csv(f"{filesPath}khulna_relativeHumidity_2m.csv") 
+watertemp = pd.read_csv(f'{filesPath}Realtime_watertemp.csv')
+
 #create a function to get month and year based on integer sequence input
 #using package datetime makes it easier to get month, year (this is also dependant on the the way the data
 # file is set up)
 #data.day[i] needs= float for timedelta() func; (data.day[i] = int in pandas df) 
-def find_day_month_year(input_day, start_day = dt.date(2016,12,31)):
+def find_day_month_year(input_day, start_day = dt.date(2018,1,1)): #dt.date(2016,12,31)):
     computed_day = start_day + dt.timedelta(days = float(input_day))
     days_from_year_start = computed_day - dt.date(computed_day.year, 1, 1) + dt.timedelta(days = 1)
 
@@ -75,7 +75,7 @@ def read_dataline(day_argue):
 
 def calculate_phi_sn(day_argue):
     daily_data = read_dataline(day_argue)
-    wind_speed = daily_data['WS2M']
+    wind_speed = float(daily_data['WS2M'])
     
     R_s = 0.035 #considering constant value for daily code #Losordo&Piedrahita
 
@@ -83,7 +83,7 @@ def calculate_phi_sn(day_argue):
     
     R= R_s *(1-0.08 * W_z)
     
-    phi_s = float(daily_data['SRAD'])  #Kj/m2/hr
+    phi_s = float(daily_data['SRAD']) #Kj/m2/hr in excel file says SRAD_MJ/m2day
 
     phi_sn = phi_s * (1-R)
     
@@ -143,7 +143,7 @@ def calculate_phi_e(T_wk,day_argue):
     
     RH = relative_humidity[(relative_humidity['day']== day_argue)]
 
-    RH = float(RH['RH2M'])
+    RH = float(RH['RH2M']) / 100
 
 # e_a, water vapor pressure above the pond surface; unit mmHg
     
@@ -181,7 +181,7 @@ def main_simulation_loop():
     
     global T_wk
     count = 0
-    for day_argue in list(range(1, 1096)):
+    for day_argue in list(range(1, 730)):
         
         
         count = count + 1
@@ -218,26 +218,23 @@ def main_simulation_loop():
         T_wC_vec.append(T_w)
 
         T_wk = T_w + 273.15 #convert back to kelvin
-        print(T_wk)
 
-
-
-    print(T_wC_vec)
     
     T_wC = np.array(T_wC_vec)
+    
 
     df = pd.DataFrame(T_wC)
     
-    df1= pd.concat([air_temp_data, df], axis = 1)
+    df1= pd.concat([data, df], axis = 1)
+    df1 = df1.rename(columns={'0':'temp_output'},axis=1)
     
-    df1.to_csv('Water_temp_daily.csv',index=False)
+    df1.to_csv('GaoMerrick_output.csv',index=False)
 
     plt.plot(T_wC, label = 'Simulated Water temp')
-    plt.plot(data2['degC_avg'], label = 'Observed Air temp')
+    plt.plot(data['tempObs_avg'], label = 'Observed Air temp')
     plt.plot(watertemp['day_avg'], label = 'Observed Water temp')
     plt.gca().legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
-
 
 
 if __name__ == '__main__':

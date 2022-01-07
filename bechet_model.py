@@ -43,7 +43,7 @@ T_wk = 287.51 #first day water temp at khulna
 T_wc_0 = 19.3
 T_wk_vec = []
 specific_heat = 4.18 * (10**3)
-Volume = 6153.05 #m3
+Volume =  6153.05 #m3
 area = 4047 #m2
 
 #open csv file using pandas to create pandas dataframe 
@@ -224,9 +224,9 @@ def modelOutputs(T_wk_vec,data):
     df1 = finalDataFrame(T_wk_vec, data, element_df)
     df1["date"] = cf.num2date(df1["DAY"], "days since 2016-12-31")
     df1.rename(columns={'DAY':'days_since_start'})
-    for i in df1.index:
-        df1['DAY'][i] = df1['date'][i].day
-    
+    #for i in df1.index:
+    #    df1['DAY'][i] = df1['date'][i].day
+    print(df1)
     max_temp = df1.groupby('DAY').max()
     min_temp = df1.groupby('DAY').min()
     daily_data = data.groupby('DAY').mean()
@@ -256,7 +256,7 @@ def modelVSobserved(T_wk_vec, observed):
     plt.plot(observed.index, observed['avg_water_temp'], label="average water temp (observed)")
     plt.xlabel("Time (days)")
     plt.ylabel("Temperature (C)")
-    plt.title("Compare daily model data to avg observed temp")
+    plt.title("Compare daily model data to avg observed water temp")
     plt.legend()
     plt.show()    
  

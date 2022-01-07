@@ -68,7 +68,7 @@ def plotMonthlyObserved(month):
     plt.xlabel("days since start")
     plt.ylabel("temperature (C)")
     if saveFigs == "y":
-        plt.savefig("airTemp_plot{month}{year}.png")
+        plt.savefig(f"airTemp_plot{month}{year}.png")
         plt.show()
     elif saveFigs == "n":
         plt.show()
@@ -80,7 +80,7 @@ def plotMonthlyObserved(month):
     plt.xlabel("hours since start")
     plt.ylabel("temperature (C)")
     if saveFigs == "y":
-        plt.savefig("airVSwater_plot{month}{year}")
+        plt.savefig(f"airVSwater_plot{month}{year}.png")
         plt.show()
     elif saveFigs == "n":
         plt.show()
