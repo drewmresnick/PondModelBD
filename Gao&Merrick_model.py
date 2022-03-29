@@ -53,7 +53,7 @@ watertemp = pd.read_csv(f'{filesPath}Realtime_watertemp.csv')
 #using package datetime makes it easier to get month, year (this is also dependant on the the way the data
 # file is set up)
 #data.day[i] needs= float for timedelta() func; (data.day[i] = int in pandas df) 
-def find_day_month_year(input_day, start_day = dt.date(2018,1,1)): #dt.date(2016,12,31)):
+def find_day_month_year(input_day, start_day = dt.date(2017,12,31)): #dt.date(2016,12,31)):
     computed_day = start_day + dt.timedelta(days = float(input_day))
     days_from_year_start = computed_day - dt.date(computed_day.year, 1, 1) + dt.timedelta(days = 1)
 
@@ -197,8 +197,7 @@ def main_simulation_loop():
         phi_e = calculate_phi_e(T_wk, day_argue)
         print(f'phi_e: {phi_e}')
         phi_c = calculate_phi_c(T_wk, day_argue)
-        print(f'phi_c: {phi_c}')
-        
+        print(f'phi_c: {phi_c}')        
         phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c 
 
         print(f'iteration: {count}, phi_net: {phi_net}')
@@ -226,14 +225,19 @@ def main_simulation_loop():
     df = pd.DataFrame(T_wC)
     
     df1= pd.concat([data, df], axis = 1)
-    #df1 = df1.rename(columns={'0':'temp_output'},axis=1)
+    df1 = df1.rename(columns={'0':'temp_output'},axis=1)
+    df1 = df1.rename(columns={'0':'temp_output'})
     
-    df1.to_csv(f'{filesPath}/GaoMerrick_output.csv',index=False)
+    df1.to_csv(f'{filesPath}/GaoMerrick_output.csv',index=True)
 
     plt.plot(T_wC, label = 'Simulated Water temp')
     plt.plot(data['tempObs_avg'], label = 'Observed Air temp')
     plt.plot(watertemp['day_avg'], label = 'Observed Water temp')
     plt.gca().legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.xlabel("Time (days)")
+    plt.ylabel("Temperature (C)")
+    plt.title("Compare model data to observed/measured temps")
+    plt.legend()
     plt.show()
 
 
