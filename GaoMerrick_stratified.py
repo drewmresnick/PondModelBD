@@ -12,25 +12,35 @@ import math
 import matplotlib.pyplot as plt
 
 #Setting constant values 
-
 pi = 3.1415 
 sigma = 2.07e-7 ##stefan boltzman constant
 N = 5.0593 ##empirical coefficient unit m^-2km^-1 mmHg^-1
 water_heat_capacity = 4.184 #joules
 pond_depth = 1.5204 #meters
 water_density = 997 #kg/m3
-air_density = 1.224 #kg/m3 at sea level, 15C
+air_density = 1.225 #kg/m3 at sea level, 15C
 #T_wk = 289.15 #first day water temp at khulna 
 T_surface_wk = 289.15
 T_subE1_wk = 289.15
 T_subE2_wk = 289.15
-T_surface_vec = []
-T_subE1_vec = []
-srad_names = ['SRAD00', 'SRAD03', 'SRAD06', 'SRAD09','SRAD12', 'SRAD15', 'SRAD18', 'SRAD21']
 volume = 6153.05 #m3 
 area = 4047 #m2
 t = 24 #hrs
-element_depths = [0,5,10,20,30,40,50]
+z = [0,-0.05,-0.1,-0.2,-0.3,-0.4,-0.5]
+#z = [0,0.05,0.1,0.2,0.3,0.4,0.5]
+#create empty lists for outputs
+T_surface_vec = []
+T_subE1_vec = []
+phi_net_vec = []
+phi_at_vec = []
+phi_c_vec = []
+phi_d_2_vec = []
+phi_d_4_vec = []
+phi_e_vec = []
+phi_sn_vec = []
+phi_sn_2_vec = []
+phi_sn_4_vec = []
+phi_ws_vec = []
 
 # lambda, solar altitude angle
 #for lambda install and import package pysolar to use function solar.get_altitude
@@ -86,9 +96,9 @@ def calculate_phi_sn(day_argue):
 
     W_z = wind_speed #wind velocity in m/s
     
-    R= R_s *(1-0.08 * W_z)
+    R= R_s *(1-(0.08 * W_z))
     
-    phi_s = float(daily_data['SRAD']) #Kj/m2/hr in excel file says SRAD_MJ/m2day
+    phi_s = float(daily_data['SRAD']) * (1000/24) #Kj/m2/hr; in excel file says SRAD_MJ/m2day
 
     phi_sn = phi_s * (1-R)
     
@@ -102,12 +112,10 @@ def calculate_phi_snz(phi_sn, z, day_argue):
     wind_speed = float(daily_data['WS2M'])
     
     R_s = 0.035 #considering constant value for daily code #Losordo&Piedrahita
-    B = 0.4 
-    n= 0.013
+    B = 0.05 
+    n= 1/(1.3**-5) #m-1
     
-    W_z = wind_speed #wind velocity in m/s
-    
-    R= R_s *(1-0.08 * W_z)
+    R= R_s *(1-0.08 * wind_speed)
     
     phi_snz = phi_sn*(1-R)*(1-B)*math.exp(-n*z)
     
@@ -193,23 +201,21 @@ def calculate_phi_c(T_wk, day_argue):
     return(phi_c)
 
 
-def calculate_phi_d(z,z_1,T_z_1,T_z,day_argue): #temperature for the volume element above and for the volume element (if z=2, need T z = 1 and T z = 2)
+def calculate_phi_d(z,z_above,z_below, T_above,T_below,day_argue): #temperature for the volume element above and for the volume element (if z=2, need T z = 1 and T z = 2)
     daily_data = read_dataline(day_argue)
-    wind_speed = daily_data['WS2M']
-    z_half = (z - z_1) / 2 #gets the mid depth of the volume element depending on the upper and lower depth (see diagram L&P)
+    wind_speed = daily_data['WS2M'] 
     C_z = 1.0*10**-3
-    W = float(wind_speed) #m/s per C&B paper
-    z_add = z + z_half 
-    z_sub = z - z_half
+    W = float(wind_speed)  #m/s per C&B paper
+    
     
     T_o = air_density * C_z * (W**2)
-    W_v = (T_o / water_density)
+    W_v = (T_o / water_density)**.5
     K = 6*(W**-1.84)
     U_s = 30*(W_v)
     
-    E_z = ((W_v**2) / (U_s * K)) * math.exp(-K * z)
-    
-    phi_d = water_density * water_heat_capacity * E_z * (T_z_1 - T_z) / (z_add - z_sub)
+    E_z = ((W_v**2) / (U_s * K)) * math.exp(-K * z) #for same z value being calculated for phi_d 
+
+    phi_d = water_density * water_heat_capacity * E_z * (T_above - T_below) / (z_above - z_below)
     
     return phi_d
 
@@ -221,7 +227,7 @@ def calculate_phi_net(T_wk, day_argue):
     phi_ws = calculate_phi_ws(T_wk, day_argue)  
     phi_e = calculate_phi_e(T_wk, day_argue)
     phi_c = calculate_phi_c(T_wk, day_argue)      
-    phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c
+    phi_net = phi_sn + phi_at - phi_ws - phi_e + phi_c
     
     return phi_net
 
@@ -240,7 +246,9 @@ def main_simulation_loop():
     global T_subE1_wk
     global T_subE2_wk
     count = 0
-    for day_argue in list(range(1, 730)): #730
+    
+    
+    for day_argue in list(range(1, 730)): #730 maximum
         
         count = count + 1
                 
@@ -249,26 +257,44 @@ def main_simulation_loop():
         T_subE2_wC = T_subE2_wk - 273.15
         
         #T_wC = T_wk - 273.15 #change to degree celcius  
-        
+        print(f'******ITERATION {count}******')
+        print(f'surface temp {T_surface_wC} E1 temp {T_subE1_wC}')
         H_surface_t_1 = T_surface_wC * volume * water_heat_capacity * water_density
         H_subE1_t_1 = T_subE1_wC * volume * water_heat_capacity * water_density
         H_subE2_t_1 = T_subE2_wC * volume * water_heat_capacity * water_density
         #H_t_1 = T_wC * volume * water_heat_capacity * water_density
-
+        
+        print(f'surface heat t-1 {H_surface_t_1}; E1 heat t-1 {H_subE1_t_1}')
         #CALCS FOR EACH PHI FOR EACH LAYER 
+        phi_at = calculate_phi_at(day_argue)
+        phi_ws = calculate_phi_ws(T_surface_wk, day_argue)  
+        phi_e = calculate_phi_e(T_surface_wk, day_argue)
+        phi_c = calculate_phi_c(T_surface_wk, day_argue)  
+                
+        phi_at_vec.append(phi_at)
+        phi_ws_vec.append(phi_ws)
+        phi_e_vec.append(phi_e)
+        phi_c_vec.append(phi_c)
         
         phi_net = calculate_phi_net(T_surface_wk, day_argue)
         print(f'phi net = {phi_net}')
         phi_sn = calculate_phi_sn(day_argue)
         print(f'phi sn = {phi_sn}')
-        phi_sn_2 = calculate_phi_snz(phi_sn, 10, day_argue)
+        phi_sn_2 = calculate_phi_snz(phi_sn, z[1], day_argue)
         print(f'phi sn2 = {phi_sn_2}')
-        phi_d_2 = calculate_phi_d(10,0, T_surface_wC, T_subE1_wC, day_argue)
+        phi_d_2 = calculate_phi_d(z[2],z[1],z[3], T_surface_wC, T_subE1_wC, day_argue)
         print(f'phi d2 = {phi_d_2}')
-        phi_sn_4 = calculate_phi_snz(phi_sn, 30, day_argue)
+        phi_sn_4 = calculate_phi_snz(phi_sn, z[3], day_argue)
         print(f'phi sn4 = {phi_sn_4}')
-        phi_d_4 = calculate_phi_d(30,10, T_subE1_wC, T_subE2_wC, day_argue)
+        phi_d_4 = calculate_phi_d(z[4],z[3], z[5], T_subE1_wC, T_subE2_wC, day_argue)
         print(f'phi d4 = {phi_d_4}')
+        
+        phi_net_vec.append(phi_net)
+        phi_sn_vec.append(phi_sn)
+        phi_sn_2_vec.append(phi_sn_2)
+        phi_d_2_vec.append(phi_d_2)
+        phi_sn_4_vec.append(phi_sn_4)
+        phi_d_4_vec.append(phi_d_4)
         
         #surface layer volume element = 1
         H_surface_t = H_surface_t_1 + ((phi_net - phi_sn_2 - phi_d_2) * area * t) #multiply by t because we are doing a daily timestep
@@ -276,15 +302,20 @@ def main_simulation_loop():
         
         #subsurface layer volume elemt = 2
         H_subE1_t = H_subE1_t_1 + ((phi_sn_2 - phi_sn_4 + phi_d_2 - phi_d_4) * area * t) #multiply by t because we are doing a daily timestep
-        T_subE1_w = H_subE1_t/ (volume * water_heat_capacity * water_density)
+        T_subE1_w = H_subE1_t/(volume * water_heat_capacity * water_density)
         
+        print(f'surface heat {H_surface_t}; E1 heat {H_subE1_t}')
         #T_w = H_t/ (volume * water_heat_capacity * water_density)
         print(f'iteration: {count}, T_surface_w: {T_surface_w}')
         print(f'iteration: {count}, T_subE1: {T_subE1_w}')
-
+        
+        calc = phi_sn_2 - phi_sn_4 + phi_d_2 - phi_d_4
+        print(f'E1 calc {calc}')
+        print(f'****END ITERATION {count}****')
         #add T_w to a list somehow
         T_surface_vec.append(T_surface_w)
         T_subE1_vec.append(T_subE1_w)
+        
         
         T_surface_wk = T_surface_w + 273.15 #convert back to kelvin
         T_subE1_wk = T_subE1_w + 273.15
@@ -293,23 +324,39 @@ def main_simulation_loop():
     T_surface_wC = np.array(T_surface_vec)
     T_subE1_wC = np.array(T_subE1_vec)
 
-    df = pd.DataFrame(T_surface_wC,columns=['surface_temp'])
-    df2 = pd.DataFrame(T_subE1_wC,columns=['E1_temp'])
+    surfaceT_df = pd.DataFrame(T_surface_wC,columns=['surface_temp'])
+    E1T_df = pd.DataFrame(T_subE1_wC,columns=['E1_temp'])
+    fluxes = pd.DataFrame(phi_net_vec,columns=['phi_net'])
+    fluxes['phi_at'] = phi_at_vec
+    fluxes['phi_ws'] = phi_ws_vec
+    fluxes['phi_e'] = phi_e_vec
+    fluxes['phi_c'] = phi_c_vec
+    fluxes['phi_sn'] = phi_sn_vec
+    fluxes['phi_net'] = phi_net_vec
+    fluxes['phi_sn_2'] = phi_sn_2_vec
+    fluxes['phi_sn_4'] = phi_sn_4_vec
+    fluxes['phi_d_2'] = phi_d_2_vec
+    fluxes['phi_d_4'] = phi_d_4_vec
+    fluxes['T_surface'] = T_surface_vec
+    fluxes['T_subE1'] = T_subE1_vec
     
-    df1= pd.concat([data, df,df2], axis = 1)
+    #fluxes.to_csv(f'{filesPath}/flux_outputsPositive.csv',index=True)
+    
+    df1= pd.concat([data, surfaceT_df,E1T_df], axis = 1)
     #df1 = df1.rename(columns={'0':'surface_temp', '1':'E1_temp'})
     
-    df1.to_csv('GaoMerrick_output.csv',index=False)
+    #df1.to_csv(f'{filesPath}/GaoMerrick_output.csv',index=True)
 
-    plt.plot(T_surface_wC, label = 'Simulated Surface Water temp')
-    plt.plot(T_subE1_wC, label = 'Simulated subsurface water temp (E1)')
-    plt.plot(data['tempObs_avg'], label = 'Observed Air temp')
-    plt.plot(watertemp['day_avg'], label = 'Observed Water temp')
-    plt.gca().legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.plot(T_surface_wC, label = 'h20 temp (surface')
+    plt.plot(T_subE1_wC, label = 'h20 temp (E1)')
+    #plt.plot(data['tempObs_avg'], label = 'Observed Air temp')
+    plt.plot(watertemp['day_avg'], label = 'Observed temp')
+    #plt.gca().legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.xlabel("Time (days)")
     plt.ylabel("Temperature (C)")
     plt.title("Compare model data to observed/measured temps")
-    plt.legend()
+    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+    plt.tight_layout()
     plt.show()
 
 
