@@ -83,7 +83,7 @@ def calculate_phi_sn(day_argue):
     
     R= R_s *(1-0.08 * W_z)
     
-    phi_s = float(daily_data['SRAD']) #Kj/m2/hr in excel file says SRAD_MJ/m2day
+    phi_s = float(daily_data['SRAD']) * (1000/24) #Kj/m2/hr in excel file says SRAD_MJ/m2day
 
     phi_sn = phi_s * (1-R)
     
@@ -226,9 +226,9 @@ def main_simulation_loop():
     df = pd.DataFrame(T_wC)
     
     df1= pd.concat([data, df], axis = 1)
-    df1 = df1.rename(columns={'0':'temp_output'},axis=1)
+    #df1 = df1.rename(columns={'0':'temp_output'},axis=1)
     
-    df1.to_csv('GaoMerrick_output.csv',index=False)
+    df1.to_csv(f'{filesPath}/GaoMerrick_output.csv',index=False)
 
     plt.plot(T_wC, label = 'Simulated Water temp')
     plt.plot(data['tempObs_avg'], label = 'Observed Air temp')

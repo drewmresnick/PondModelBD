@@ -32,10 +32,9 @@ import matplotlib.pyplot as plt
 import cftime as cf
 
 #Setting constant values 
-numberDays = int(input("Input number of days to run the model (up to 1096): ")) #1096 for the test dataset
+numberDays = int(input("Input number of days to run the model (up to 1095): ")) #1096 for the test dataset
 filesPath = input("Input file path to where data files are located: ")
 saveFile = input("Save model outputs? (y/n): ")
-
 pond_depth = 1.5204 #meters
 water_density = 997 #kg/m3
 T_0 = 287.51
@@ -50,19 +49,27 @@ area = 4047 #m2
 data = pd.read_csv(f"{filesPath}bechet_etal_input.csv") 
 observed = pd.read_csv(f"{filesPath}observed_khulna.csv")
 
-def find_day_month_year(input_day, start_day = dt.date(2016,12,31)):
+def find_day_month_year(input_day, start_day = dt.date(2017,1,1)):#dt.date(2016,12,31)):
     computed_day = start_day + dt.timedelta(days = float(input_day))
     days_from_year_start = computed_day - dt.date(computed_day.year, 1, 1) + dt.timedelta(days = 1)
-
+    print("find_day_month_year")
+    print(computed_day)
+    print(days_from_year_start)
     return days_from_year_start.days, computed_day
 
 #create a function to read data for particular day, month and year so we can use it to loop through all days later
 def read_dataline(day_argue, hour):
     
     day, day_mon_year = find_day_month_year(day_argue)
+    year = day_mon_year.year
+    hour = hour
+    print("read_dataline")
+    print(year)
+    print(day)
+    print(hour)
+    print(day_mon_year)
     
-    selected_data = data[(data['DAY']== day) & (data['HR'] == hour)]
-        
+    selected_data = data[(data['DAY']== day) & (data['HR'] == hour)& (data['YEAR'] == year)]    
     return selected_data 
 
 
@@ -83,7 +90,8 @@ def calculate_Qrap(T_wk):
 #Qra,s = (1-fa)HsS
 def calculate_Qras(day_argue, hour):
     daily_data = read_dataline(day_argue, hour)
-    solrad = float(daily_data['SRAD']) #/ 3600
+    print(daily_data)
+    solrad = float(daily_data['SRAD'])
     
     fa = 0 #% algae absorption
 
@@ -222,13 +230,13 @@ def finalDataFrame(T_wk_vec,data,element_df):
   
 def modelOutputs(T_wk_vec,data):  
     df1 = finalDataFrame(T_wk_vec, data, element_df)
-    df1["date"] = cf.num2date(df1["DAY"], "days since 2016-12-31")
-    df1.rename(columns={'DAY':'days_since_start'})
+    #df1["date"] = cf.num2date(df1["DAY"], "days since 2016-12-31")
+    #df1.rename(columns={'DAY':'days_since_start'})
     #for i in df1.index:
     #    df1['DAY'][i] = df1['date'][i].day
     print(df1)
-    max_temp = df1.groupby('DAY').max()
-    min_temp = df1.groupby('DAY').min()
+    max_temp = df1.groupby('DAY_CNT').max()
+    min_temp = df1.groupby('DAY_CNT').min()
     daily_data = data.groupby('DAY').mean()
     
     plt.plot(max_temp.index, max_temp['T_wC'], label="max water temp (modelled)")
@@ -240,16 +248,15 @@ def modelOutputs(T_wk_vec,data):
     plt.legend()
     plt.show() 
     if saveFile == "y":
-        df1.to_csv('/Users/drewr/RemoteData/ACToday/Bangladesh/BDaquaculture/sensitivity_analysis_Bechet/simulated_hourly.csv',index=False)
+        df1.to_csv('/Users/drewr/RemoteData/ACToday/Bangladesh/BDaquaculture/outputPlots/Bechet_etal/simulated_hourly.csv',index=False)
     elif saveFile == "n":
-        #df1.to_csv('/Users/drewr/RemoteData/ACToday/Bangladesh/BDaquaculture/sensitivity_analysis_Bechet/simulated_hourly.csv',index=False)
         return df1
         
 def modelVSobserved(T_wk_vec, observed):
     df1 = finalDataFrame(T_wk_vec, data, element_df)
     
-    max_temp = df1.groupby('DAY').max()
-    min_temp = df1.groupby('DAY').min()
+    max_temp = df1.groupby('DAY_CNT').max()
+    min_temp = df1.groupby('DAY_CNT').min()
     
     plt.plot(max_temp.index, max_temp['T_wC'], label="max water temp (modelled)")
     plt.plot(min_temp.index, min_temp['T_wC'], label="min water temp (modelled)")
