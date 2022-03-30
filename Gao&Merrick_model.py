@@ -26,6 +26,12 @@ volume = 6153.05 #m3
 area = 4047 #m2
 t = 24 #hrs
 
+phi_net_vec = []
+phi_at_vec = []
+phi_c_vec = []
+phi_ws_vec = []
+phi_e_vec = []
+phi_sn_vec = []
 # lambda, solar altitude angle
 #for lambda install and import package pysolar to use function solar.get_altitude
 #for now use values for lambda from Shammuns code
@@ -200,6 +206,13 @@ def main_simulation_loop():
         print(f'phi_c: {phi_c}')        
         phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c 
 
+        phi_at_vec.append(phi_at)
+        phi_ws_vec.append(phi_ws)
+        phi_e_vec.append(phi_e)
+        phi_c_vec.append(phi_c)
+        phi_net_vec.append(phi_net)
+        phi_sn_vec.append(phi_sn)
+
         print(f'iteration: {count}, phi_net: {phi_net}')
         
         T_wC = T_wk - 273.15 #change to degree celcius   
@@ -221,6 +234,17 @@ def main_simulation_loop():
     
     T_wC = np.array(T_wC_vec)
     
+    fluxes = pd.DataFrame(phi_net_vec,columns=['phi_net'])
+    fluxes['phi_at'] = phi_at_vec
+    fluxes['phi_ws'] = phi_ws_vec
+    fluxes['phi_e'] = phi_e_vec
+    fluxes['phi_c'] = phi_c_vec
+    fluxes['phi_sn'] = phi_sn_vec
+    fluxes['phi_net'] = phi_net_vec
+    fluxes['T_wC'] = T_wC_vec
+    fluxes['observed H20'] = data['tempObs_avg']
+    
+    fluxes.to_csv(f'{filesPath}/flux_outputsUnstratified.csv',index=True)    
 
     df = pd.DataFrame(T_wC)
     
