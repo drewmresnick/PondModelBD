@@ -50,10 +50,8 @@ time_of_day = np.arange(0,24,3) #array of 3 hourly windows in a day
 # I separated the two districts into two files for ease for now, not sure if we want to keep them together
 filesPath = input("Input file path to where data files are located: ")
 #open csv file using pandas to create pandas dataframe 
-data = pd.read_csv(f"{filesPath}input_data_for_simulation_2018_2019_khulna.csv") 
-air_temp_data = pd.read_csv(f"{filesPath}diurnal_air_temp_khulna_daily.csv") #this value is in kelvin
-relative_humidity = pd.read_csv(f"{filesPath}khulna_relativeHumidity_2m.csv") 
-watertemp = pd.read_csv(f'{filesPath}Realtime_watertemp.csv')
+data = pd.read_csv(f"{filesPath}input_data_for_simulation_2018_2019_khulna.csv")
+watertemp = pd.read_csv(f'{filesPath}Realtime_watertemp.csv') #observed data
 
 #create a function to get month and year based on integer sequence input
 #using package datetime makes it easier to get month, year (this is also dependant on the the way the data
@@ -95,23 +93,13 @@ def calculate_phi_sn(day_argue):
     
     return phi_sn
 
-#create function to open air_temp file for day month and year
-
-def read_air_temp(day_argue):
-    day, day_mon_year = find_day_month_year(day_argue)
-    year = day_mon_year.year
-    
-    selected_air_data = air_temp_data[(air_temp_data['day']== day) & (air_temp_data['year'] == year)]
-  
-    return selected_air_data 
-
 #creating a function for phi_at atmospheric radiation following the equation in variables excel sheet
 #shammun includes cloud fraction in the equation
 
 
 def calculate_phi_at(day_argue):
-    air_temp_line = read_air_temp(day_argue)
-    T_ak = float(air_temp_line['avg_temp']) #in kelvin
+    daily_data = read_dataline(day_argue)
+    T_ak = float(daily_data['avg_temp'])
     e = (0.398 * (10 ** (-5)))*(T_ak ** (2.148))
     r = 0.03 # reflectance of the water surface to longwave radiation
     phi_at = (1-r)*e*sigma*((T_ak)**4)
@@ -123,8 +111,6 @@ def calculate_phi_at(day_argue):
 # from the water temp data file (ideally Jan 1st 2018, morning water temp)
 
 def calculate_phi_ws(T_wk, day_argue):
-    
-
 # set T_wk such that it reads the final output water temp from results in a loop
     
     phi_ws = 0.97 * sigma * ((T_wk)**4)
@@ -137,22 +123,14 @@ def calculate_phi_ws(T_wk, day_argue):
 def calculate_phi_e(T_wk,day_argue):
     daily_data = read_dataline(day_argue)
     wind_speed = float(daily_data['WS2M'])
-
+    T_ak = float(daily_data['avg_temp'])
+    RH = float(daily_data['RH2M']) / 100
     W_2 = wind_speed * 3.6
-    air_temp_line = read_air_temp(day_argue)
-    T_ak = float(air_temp_line['avg_temp']) #kelvin
-    #T_ac = T_ak -273.15 #degree celcius
 
 # e_s, saturated vapor pressure needs to be in T_wc deg celcius
-
     e_s = 25.374 * math.exp(17.62 - 5271/T_wk)
-    
-    RH = relative_humidity[(relative_humidity['day']== day_argue)]
-
-    RH = float(RH['RH2M']) / 100
 
 # e_a, water vapor pressure above the pond surface; unit mmHg
-    
     e_a = RH * 25.374 * math.exp(17.62 - 5271/T_ak)     
 
     phi_e = float(N* W_2 * (e_s- e_a))
@@ -163,11 +141,9 @@ def calculate_phi_e(T_wk,day_argue):
 def calculate_phi_c(T_wk, day_argue):
     daily_data = read_dataline(day_argue)
     wind_speed = daily_data['WS2M']
+    T_ak = float(daily_data['avg_temp'])
 
     W = float(wind_speed) #m/s per C&B paper
-    
-    air_temp_line = read_air_temp(day_argue)
-    T_ak = float(air_temp_line['avg_temp']) #kelvin
     
     T_wc = T_wk - 273.15 #convert to deg celcius
     T_ac = T_ak - 273.15 
@@ -187,7 +163,7 @@ def main_simulation_loop():
     
     global T_wk
     count = 0
-    for day_argue in list(range(1, 730)):
+    for day_argue in list(range(1, 730)): #730
         
         
         count = count + 1
