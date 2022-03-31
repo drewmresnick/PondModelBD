@@ -48,6 +48,7 @@ area = 4047 #m2
 #open csv file using pandas to create pandas dataframe 
 data = pd.read_csv(f"{filesPath}bechet_etal_input.csv") 
 observed = pd.read_csv(f"{filesPath}observed_khulna.csv")
+observed['date'] = pd.to_datetime(observed['date'])
 
 def find_day_month_year(input_day, start_day = dt.date(2017,1,1)):#dt.date(2016,12,31)):
     computed_day = start_day + dt.timedelta(days = float(input_day))
@@ -235,9 +236,16 @@ def modelOutputs(T_wk_vec,data):
     #for i in df1.index:
     #    df1['DAY'][i] = df1['date'][i].day
     print(df1)
-    max_temp = df1.groupby('DAY_CNT').max()
-    min_temp = df1.groupby('DAY_CNT').min()
+    max_temp = df1.groupby('DAY_CNT').max().reset_index()
+    min_temp = df1.groupby('DAY_CNT').min().reset_index()
+    mean_temp = df1.groupby('DAY_CNT').mean().reset_index()
     daily_data = data.groupby('DAY').mean()
+    
+    df2 = pd.DataFrame(data={'date': pd.date_range(start='2017-1-1',end='2019-12-31',freq='D')})
+    df2['daily_maxModel'] = max_temp['T_wC']
+    df2['daily_minModel'] = min_temp['T_wC']
+    df2['daily_meanModel'] = mean_temp['T_wC']
+    mergeDf = df2.merge(observed, how='inner', on = ['date'])
     
     plt.plot(max_temp.index, max_temp['T_wC'], label="max water temp (modelled)")
     plt.plot(min_temp.index, min_temp['T_wC'], label="min water temp (modelled)")
@@ -248,7 +256,9 @@ def modelOutputs(T_wk_vec,data):
     plt.legend()
     plt.show() 
     if saveFile == "y":
-        df1.to_csv('/Users/drewr/RemoteData/ACToday/Bangladesh/BDaquaculture/outputPlots/Bechet_etal/simulated_hourly.csv',index=False)
+        df1.to_csv('/Users/drewr/RemoteData/ACToday/Bangladesh/BDaquaculture/sensitivity_analysis_Bechet/simulated_hourly.csv',index=False)
+        df1.to_csv(f'{filesPath}simulated_hourly.csv',index=False)
+        mergeDf.to_csv(f'{filesPath}simulatedVobserved_daily.csv', index=False)
     elif saveFile == "n":
         return df1
         
