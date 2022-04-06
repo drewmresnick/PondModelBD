@@ -99,7 +99,7 @@ def calculate_phi_sn(day_argue):
 
 def calculate_phi_at(day_argue):
     daily_data = read_dataline(day_argue)
-    T_ak = float(daily_data['avg_temp'])
+    T_ak = float(daily_data['T2M'])
     e = (0.398 * (10 ** (-5)))*(T_ak ** (2.148))
     r = 0.03 # reflectance of the water surface to longwave radiation
     phi_at = (1-r)*e*sigma*((T_ak)**4)
@@ -123,7 +123,7 @@ def calculate_phi_ws(T_wk, day_argue):
 def calculate_phi_e(T_wk,day_argue):
     daily_data = read_dataline(day_argue)
     wind_speed = float(daily_data['WS2M'])
-    T_ak = float(daily_data['avg_temp'])
+    T_ak = float(daily_data['T2M'])
     RH = float(daily_data['RH2M']) / 100
     W_2 = wind_speed * 3.6
 
@@ -141,7 +141,7 @@ def calculate_phi_e(T_wk,day_argue):
 def calculate_phi_c(T_wk, day_argue):
     daily_data = read_dataline(day_argue)
     wind_speed = daily_data['WS2M']
-    T_ak = float(daily_data['avg_temp'])
+    T_ak = float(daily_data['T2M'])
 
     W = float(wind_speed) #m/s per C&B paper
     
