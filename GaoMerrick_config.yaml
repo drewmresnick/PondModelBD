@@ -1,0 +1,14 @@
+#config file for running Gao & Merrick model
+
+dataPath:
+
+input_dataFile:
+
+observation_dataFile:
+
+dataYear:
+
+dataType:
+
+saveOutputs:
+
