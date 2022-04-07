@@ -12,11 +12,12 @@ water_heat_capacity = 4.184 #joules
 pond_depth = 1.5204 #meters
 water_density = 997 #kg/m3
 T_wk = 289.15 #first day water temp at khulna 
-T_wC_vec = []
 volume = 6153.05 #m3
 area = 4047 #m2
 t = 24 #hrs
 
+T_wC_vec = []
+T_wK_vec = []
 phi_net_vec = []
 phi_at_vec = []
 phi_c_vec = []
@@ -141,7 +142,7 @@ def main_simulation_loop(data,watertemp,filesPath):
     #global obsData
     global T_wk
     count = 0
-    for day_argue in list(range(1, 7)): #730
+    for day_argue in list(range(1, 730)): #730
         
         count = count + 1
 
@@ -183,6 +184,7 @@ def main_simulation_loop(data,watertemp,filesPath):
         T_wC_vec.append(T_w)
 
         T_wk = T_w + 273.15 #convert back to kelvin
+        T_wK_vec.append(T_wk)
 
     
     T_wC = np.array(T_wC_vec)
@@ -195,14 +197,13 @@ def main_simulation_loop(data,watertemp,filesPath):
     fluxes['phi_sn'] = phi_sn_vec
     fluxes['phi_net'] = phi_net_vec
     fluxes['T_wC'] = T_wC_vec
-    fluxes['observed H20'] = data['tempObs_avg']
+    fluxes['observed_H20'] = data['tempObs_avg']
     
     fluxes.to_csv(f'{filesPath}/flux_outputsUnstratified.csv',index=True)    
 
-    df = pd.DataFrame(T_wC)
-    
-    df1= pd.concat([data, df], axis = 1)
-    df1 = df1.rename(columns={'0':'temp_output'})
+    df1 = data
+    df1['simTemp_C'] = T_wC_vec
+    df1['simTemp_K'] = T_wK_vec
     
     df1.to_csv(f'{filesPath}/GaoMerrick_output.csv',index=True)
 
@@ -220,7 +221,7 @@ def climatology_simulation_loop(data,filesPath):
     #global obsData
     global T_wk
     count = 0
-    for day_argue in list(range(1, 365)):
+    for day_argue in list(range(1, 366)):
         
         count = count + 1
 
@@ -262,10 +263,7 @@ def climatology_simulation_loop(data,filesPath):
         T_wC_vec.append(T_w)
 
         T_wk = T_w + 273.15 #convert back to kelvin
-
-    
-    T_wC = np.array(T_wC_vec)
-    
+        T_wK_vec.append(T_wk)      
     fluxes = pd.DataFrame(phi_net_vec,columns=['phi_net'])
     fluxes['phi_at'] = phi_at_vec
     fluxes['phi_ws'] = phi_ws_vec
@@ -277,15 +275,14 @@ def climatology_simulation_loop(data,filesPath):
     
     fluxes.to_csv(f'{filesPath}/flux_outputsClimatology.csv',index=True)    
 
-    df = pd.DataFrame(T_wC)
-    
-    df1= pd.concat([data, df], axis = 1)
-    df1 = df1.rename(columns={'0':'temp_output'})
+    df1 = data
+    df1['simTemp_C'] = T_wC_vec
+    df1['simTemp_K'] = T_wK_vec
     
     df1.to_csv(f'{filesPath}/GaoMerrick_outputClimatology.csv',index=True)
 
-    plt.plot(T_wC, label = 'Simulated Water temp')
-    plt.plot(data['T2M'], label = 'Observed Air temp (climatology)')
+    plt.plot(T_wC_vec, label = 'Simulated Water temp')
+    plt.plot(data['T2M_C'], label = 'Observed Air temp (climatology)')
     plt.gca().legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.xlabel("Time (days)")
     plt.ylabel("Temperature (C)")
