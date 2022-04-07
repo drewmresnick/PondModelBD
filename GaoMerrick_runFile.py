@@ -7,8 +7,10 @@
 
 import pandas as pd
 import GaoMerrick_model
+import os
+#import pyaconf
 
-
+#CONFIG = pyaconf.load(os.environ["CONFIG"])
 #reading in input csv file as array (question for drew: let me know if you want to work with dataframe instead)
 # I separated the two districts into two files for ease for now, not sure if we want to keep them together
 filesPath = input("Input file path to where data files are located: ")
