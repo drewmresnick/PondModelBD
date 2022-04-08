@@ -3,19 +3,38 @@ import datetime as dt
 import pandas as pd
 import math
 import matplotlib.pyplot as plt
+from configparser import ConfigParser
+
+config = ConfigParser()
+config.read('GaoMerrick_config.ini')
 
 #Setting constant values 
 pi = 3.1415 
 sigma = 2.07e-7 ##stefan boltzman constant
 N = 5.0593 ##empirical coefficient unit m^-2km^-1 mmHg^-1
 water_heat_capacity = 4.184 #joules
-pond_depth = 1.5204 #meters
 water_density = 997 #kg/m3
-T_wk = 289.15 #first day water temp at khulna 
-volume = 6153.05 #m3
-area = 4047 #m2
-t = 24 #hrs
 
+#loading in constants for model
+pond_depth =config.getfloat('modelConstants', 'pondDepth') #meters
+T_wk = config.getfloat('modelConstants', 'initialTemp') #first day water temp at khulna 
+volume = config.getfloat('modelConstants', 'pondVolume') #m3
+area = config.getfloat('modelConstants', 'pondArea') #m2
+t = config.getfloat('modelConstants', 'timeStep') #hrs
+
+#loading in variable names for data 
+dayVar = config.get('inputVarNames','dayVar')
+yearVar = config.get('inputVarNames','yearVar')
+windVar = config.get('inputVarNames','windVar')
+sradVar = config.get('inputVarNames','sradVar')
+airTempInputVar = config.get('inputVarNames','airTempInputVar')
+rhVar = config.get('inputVarNames','rhVar')
+airTempCompareVar = config.get('inputVarNames','airTempCompareVar')
+waterTempVar = config.get('obsVarNames','waterTempVar')
+print(waterTempVar)
+
+
+#create empty df for outputs
 T_wC_vec = []
 T_wK_vec = []
 phi_net_vec = []
@@ -47,8 +66,7 @@ def read_dataline(day_argue,data):
     data=data
     day, day_mon_year = find_day_month_year(day_argue,data)
     year = day_mon_year.year
-    
-    selected_data = data[(data['day']== day) & (data['year'] == year)]
+    selected_data = data[(data[dayVar]== day) & (data[yearVar] == year)]
             
     return selected_data      
              
@@ -58,7 +76,7 @@ def read_dataline(day_argue,data):
 def calculate_phi_sn(day_argue,data):
     daily_data = read_dataline(day_argue,data)
     print(daily_data)
-    wind_speed = float(daily_data['WS2M'])
+    wind_speed = float(daily_data[windVar])
     
     R_s = 0.035 #considering constant value for daily code #Losordo&Piedrahita
 
@@ -66,7 +84,7 @@ def calculate_phi_sn(day_argue,data):
     
     R= R_s *(1-0.08 * W_z)
     
-    phi_s = float(daily_data['SRAD']) * (1000/24) #Kj/m2/hr in excel file says SRAD_MJ/m2day
+    phi_s = float(daily_data[sradVar]) * (1000/24) #Kj/m2/hr in excel file says SRAD_MJ/m2day
 
     phi_sn = phi_s * (1-R)
     
@@ -78,7 +96,7 @@ def calculate_phi_sn(day_argue,data):
 
 def calculate_phi_at(day_argue,data):
     daily_data = read_dataline(day_argue,data)
-    T_ak = float(daily_data['T2M'])
+    T_ak = float(daily_data[airTempInputVar])
     e = (0.398 * (10 ** (-5)))*(T_ak ** (2.148))
     r = 0.03 # reflectance of the water surface to longwave radiation
     phi_at = (1-r)*e*sigma*((T_ak)**4)
@@ -101,9 +119,9 @@ def calculate_phi_ws(T_wk, day_argue,data):
 
 def calculate_phi_e(T_wk,day_argue,data):
     daily_data = read_dataline(day_argue,data)
-    wind_speed = float(daily_data['WS2M'])
-    T_ak = float(daily_data['T2M'])
-    RH = float(daily_data['RH2M']) / 100
+    wind_speed = float(daily_data[windVar])
+    T_ak = float(daily_data[airTempInputVar])
+    RH = float(daily_data[rhVar]) / 100
     W_2 = wind_speed * 3.6
 
 # e_s, saturated vapor pressure needs to be in T_wc deg celcius
@@ -119,8 +137,8 @@ def calculate_phi_e(T_wk,day_argue,data):
 
 def calculate_phi_c(T_wk, day_argue,data):
     daily_data = read_dataline(day_argue,data)
-    wind_speed = daily_data['WS2M']
-    T_ak = float(daily_data['T2M'])
+    wind_speed = daily_data[windVar]
+    T_ak = float(daily_data[airTempInputVar])
 
     W = float(wind_speed) #m/s per C&B paper
     
@@ -138,11 +156,12 @@ def calculate_phi_c(T_wk, day_argue,data):
 # T_w = H_t/ (water_heat_capacity * water_density)
 
 # loop for energy flux equation 
-def main_simulation_loop(data,watertemp,filesPath):
+def main_simulation_loop(data,waterTemp,filesPath):
+    print(waterTemp[waterTempVar])
     #global obsData
     global T_wk
     count = 0
-    for day_argue in list(range(1, 730)): #730
+    for day_argue in list(range(1, 731)): #731
         
         count = count + 1
 
@@ -197,7 +216,7 @@ def main_simulation_loop(data,watertemp,filesPath):
     fluxes['phi_sn'] = phi_sn_vec
     fluxes['phi_net'] = phi_net_vec
     fluxes['T_wC'] = T_wC_vec
-    fluxes['observed_H20'] = data['tempObs_avg']
+    fluxes['observed_H20'] = data[airTempCompareVar]
     
     fluxes.to_csv(f'{filesPath}/flux_outputsUnstratified.csv',index=True)    
 
@@ -208,8 +227,8 @@ def main_simulation_loop(data,watertemp,filesPath):
     df1.to_csv(f'{filesPath}/GaoMerrick_output.csv',index=True)
 
     plt.plot(T_wC, label = 'Simulated Water temp')
-    plt.plot(data['tempObs_avg'], label = 'Observed Air temp')
-    plt.plot(watertemp['day_avg'], label = 'Observed Water temp')
+    plt.plot(data[airTempCompareVar], label = 'Observed Air temp')
+    plt.plot(waterTemp['day_avg'], label = 'Observed Water temp')
     plt.gca().legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.xlabel("Time (days)")
     plt.ylabel("Temperature (C)")
