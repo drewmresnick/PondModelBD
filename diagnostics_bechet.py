@@ -22,16 +22,9 @@ Use this script to generate plots for:
 Plots will be saved to current working directory if you return "y" as input for
 this option when running the script.
 """
+
 import pandas as pd
 import matplotlib.pyplot as plt 
-
-print("This code can run plots for hourly temperature and individual energy flux.")
-outputs = input("Include fluxes? (y/n): ")
-
-if outputs == "y":
-    fluxes = ["T_wC", "Qrap", "Qras", "Qraa", "Qevap", "Qconv"]
-elif outputs == "n":
-    fluxes = ["T_wC"]
 
 dataPath = input("input path to data folder: ")
 Modeled = pd.read_csv(f"{dataPath}simulated_hourly.csv")
@@ -43,6 +36,10 @@ observed["date"] = pd.to_datetime(observed["date"])
 #function that generates plots for model outputs
 def plotMonthlyModeled(month):
     modelSel = Modeled[(Modeled["YEAR"]==year) & (Modeled["MO"]==month)]
+    if units == "W":
+        label = "heat flux (W)"
+    elif units == "W/m2":
+        label = "heat flux (W/m2)"
     for i in fluxes:
         flux = modelSel[i]
         plt.plot(flux.index, flux)
@@ -51,7 +48,7 @@ def plotMonthlyModeled(month):
         if i == "T_wC":
             plt.ylabel("temperature (C)")
         else:
-            plt.ylabel("flux (W)")
+            plt.ylabel(label)
         if saveFigs =="y":
             plt.savefig(f"{i}_plot{month}{year}.png")
             plt.show()
@@ -89,21 +86,39 @@ def plotMonthlyObserved(month):
 def plotYearlyAvg(year):
     modelSel = Modeled[Modeled["YEAR"]==year]
     grouped = modelSel.groupby(['HR'])
-    fluxes = ["Qrap", "Qras", "Qraa", "Qevap", "Qconv"]
+    if units == "W":
+        fluxes = ["Qrap", "Qras", "Qraa", "Qevap", "Qconv"]
+        label = "heat flux (W)"
+    elif units == "W/m2":
+        fluxes = ["Qrap_Wm-2", "Qras_Wm-2", "Qraa_Wm-2", "Qevap_Wm-2", "Qconv_Wm-2"]
+        label = "heat flux (W/m2)"
     for flux in fluxes:
-        meanFlux = grouped[flux].mean() / (4047 * 3600)
+        meanFlux = grouped[flux].mean() #/ (4047 * 3600) #divide my pond area and by
         resetIndex = meanFlux.reset_index()
         plt.plot(resetIndex.index, resetIndex[flux], label=f"{flux}")
         plt.legend()
         plt.title("hourly changes in heat flux (annual avg)")
         plt.xlabel("time (hrs)")
-        plt.ylabel("heat flux (W/m2)")
+        plt.ylabel(label)
+
+print("This code can run plots for hourly temperature and individual energy flux.")
+outputs = input("Include fluxes? (y/n): ")
 
 saveFigs = input("save figures (y/n): ")
 
 year = float(input("input year (2017/2018/2019): "))
 
 allMonth = input("all months? (y/n/custom): ")
+
+units = input("fluxes in units W or W/m2? (W / W/m2): ")
+
+if outputs == "y":
+    if units == "W":
+        fluxes = ["Qrap", "Qras", "Qraa", "Qevap", "Qconv"]
+    elif units == "W/m2":
+        fluxes = ["Qrap_Wm-2", "Qras_Wm-2", "Qraa_Wm-2", "Qevap_Wm-2", "Qconv_Wm-2"]
+elif outputs == "n":
+    fluxes = ["T_wC"]
 
 if allMonth == "y":
     month = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
