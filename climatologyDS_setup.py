@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Apr  6 11:08:00 2022
-
-@author: drewr
-"""
 import pandas as pd
 
 df = pd.read_csv("/Users/drewr/RemoteData/ACToday/Bangladesh/BDaquaculture/dataFiles_GM/dataFiles_GaoMerrick/POWER_Point_Daily_19900101_20201231_022d7833N_089d5330E_LST.csv",skiprows=12)
