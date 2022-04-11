@@ -36,7 +36,7 @@ numberDays = int(input("Input number of days to run the model (up to 1095): ")) 
 filesPath = input("Input file path to where data files are located: ")
 saveFile = input("Save model outputs? (y/n): ")
 pond_depth = 1.5204 #meters
-water_density = 997 #kg/m3
+water_density = 998 #kg/m3
 T_0 = 287.51
 T_wk = 287.51 #first day water temp at khulna 
 T_wc_0 = 19.3
@@ -83,7 +83,7 @@ def calculate_Qrap(T_wk):
     roh1 = 5.67 * (10**(-8)) #Wm-2K-4 or Joule/second*m2K4
 
     SA = 4047 #m2 area
-    Qrap = -ew * roh1 * SA * (T_wk**4) *3600
+    Qrap = -ew * roh1 * SA * (T_wk**4) #*3600
     
     return Qrap
 
@@ -96,10 +96,10 @@ def calculate_Qras(day_argue, hour):
     
     fa = 0 #% algae absorption
 
-    Hs =  solrad #solar radiation Wh/m2
+    Hs =  solrad #/ area#solar radiation Wh/m2
     
     SA = 4047 #m2 area
-    Qras = (1-fa) * Hs* SA *3600
+    Qras = (1-fa) * Hs * SA #*3600
     
     return Qras
 
@@ -116,7 +116,7 @@ def calculate_Qraa(day_argue, hour):
     roh1 = 5.67 * (10**(-8)) #Wm-2K-4 or Joule/second*m2K4
 
     SA = 4047 #m2 area
-    Qraa = ew * ea* roh1* (T_a**4) * SA *3600
+    Qraa = ew * ea* roh1* (T_a**4) * SA #*3600
     
     return Qraa
 
@@ -153,7 +153,7 @@ def calculate_Qevap(day_argue, hour,T_wk):
     me = K *((Pw/T_wk) - ((RH*Pa)/T_a)) *(Mw/R)
     
     SA = 4047 #m2 area
-    Qevap = -me * Lw * SA *3600
+    Qevap = -me * Lw * SA #*3600
     
     return Qevap
 
@@ -178,7 +178,7 @@ def calculate_Qconv(day_argue, hour):
     h = lambda_a * Nu / l
     SA = 4047 #m2 area
     
-    Qconv = h * (T_a-T_wk)* SA *3600
+    Qconv = h * (T_a-T_wk)* SA #*3600
    
     return Qconv
 
@@ -206,10 +206,10 @@ def main_simulation_loop():
 
             Qnet = Qrap + Qras + Qraa + Qevap + Qconv
             
-            rate_temp =Qnet / (water_density * Volume * specific_heat)
-            print(f'iteration: {count}, rate_temp: {rate_temp}')
+            net_temp =(Qnet / (water_density * Volume * specific_heat)) * 60 * 60
+            print(f'iteration: {count}, net_temp: {net_temp}')
             
-            T_wk_new = rate_temp + T_wk
+            T_wk_new = net_temp + T_wk
 
             T_wk_vec.append(T_wk_new)
     
