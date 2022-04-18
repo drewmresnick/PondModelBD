@@ -21,7 +21,7 @@ if dataType == 'D':
     watertemp = pd.read_csv(f'{filesPath}{obsFileName}') #observed data
     GaoMerrick_model.main_simulation_loop(data,watertemp,filesPath)
 elif dataType == 'C':
-    intputFileName = config.get('data', 'inputFile')
+    inputFileName = config.get('data', 'inputFile')
     data = pd.read_csv(f'{filesPath}{inputFileName}')
     print(data)
     GaoMerrick_model.climatology_simulation_loop(data, filesPath)
