@@ -7,6 +7,7 @@ from configparser import ConfigParser
 
 config = ConfigParser()
 config.read('GaoMerrick_config.ini')
+outputFilesPath = config.get('data', 'outputFilesPath')
 
 #Setting constant values 
 pi = 3.1415 
@@ -31,8 +32,7 @@ airTempInputVar = config.get('inputVarNames','airTempInputVar')
 rhVar = config.get('inputVarNames','rhVar')
 airTempCompareVar = config.get('inputVarNames','airTempCompareVar')
 waterTempVar = config.get('obsVarNames','waterTempVar')
-print(waterTempVar)
-
+spellDay = config.get('data','spellDay')
 
 #create empty df for outputs
 T_wC_vec = []
@@ -218,13 +218,13 @@ def main_simulation_loop(data,waterTemp,filesPath):
     fluxes['T_wC'] = T_wC_vec
     fluxes['observed_H20'] = data[airTempCompareVar]
     
-    fluxes.to_csv(f'{filesPath}/flux_outputsUnstratified.csv',index=True)    
+    fluxes.to_csv(f'{filesPath}{outputFilesPath}GaoMerrick_output_fluxes.csv',index=True)    
 
     df1 = data
     df1['simTemp_C'] = T_wC_vec
     df1['simTemp_K'] = T_wK_vec
     
-    df1.to_csv(f'{filesPath}/GaoMerrick_output.csv',index=True)
+    df1.to_csv(f'{filesPath}{outputFilesPath}GaoMerrick_output.csv',index=True)
 
     plt.plot(T_wC, label = 'Simulated Water temp')
     plt.plot(data[airTempCompareVar], label = 'Observed Air temp')
@@ -235,6 +235,7 @@ def main_simulation_loop(data,waterTemp,filesPath):
     plt.title("Compare model data to observed/measured temps")
     plt.legend()
     plt.show()
+    plt.savefig('f{filesPath}{outputFilesPath}GaoMerrick_output.png')
     
 def climatology_simulation_loop(data,filesPath):
     #global obsData
@@ -292,19 +293,20 @@ def climatology_simulation_loop(data,filesPath):
     fluxes['phi_net'] = phi_net_vec
     fluxes['T_wC'] = T_wC_vec
     
-    fluxes.to_csv(f'{filesPath}/flux_outputsClimatology.csv',index=True)    
+    fluxes.to_csv(f'{filesPath}{outputFilesPath}GaoMerrick_outputClimatology{spellDay}daySpell_fluxes.csv',index=True)    
 
     df1 = data
     df1['simTemp_C'] = T_wC_vec
     df1['simTemp_K'] = T_wK_vec
     
-    df1.to_csv(f'{filesPath}/GaoMerrick_outputClimatology.csv',index=True)
+    df1.to_csv(f'{filesPath}{outputFilesPath}GaoMerrick_outputClimatology{spellDay}daySpell.csv',index=True)
 
     plt.plot(T_wC_vec, label = 'Simulated Water temp')
-    plt.plot(data['T2M_C'], label = 'Observed Air temp (climatology)')
+    plt.plot(data['T2M_C'], label = f'Air temp (climatology;{spellDay} day spells)')
     plt.gca().legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.xlabel("Time (days)")
     plt.ylabel("Temperature (C)")
     plt.title("Compare climatology model data to measured temps")
     plt.legend()
-    plt.show()
+    #plt.show()
+    plt.savefig(f'{filesPath}/{outputFilesPath}/GaoMerrick_outputClimatology{spellDay}daySpell.png')
