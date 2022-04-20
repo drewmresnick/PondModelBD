@@ -29,50 +29,50 @@ import datetime as dt
 import pandas as pd
 import math
 import matplotlib.pyplot as plt
-import cftime as cf
+from configparser import ConfigParser
 
-#Setting constant values 
-numberDays = int(input("Input number of days to run the model (up to 1095): ")) #1096 for the test dataset
-filesPath = input("Input file path to where data files are located: ")
-saveFile = input("Save model outputs? (y/n): ")
-pond_depth = 1.5204 #meters
-water_density = 998 #kg/m3
-T_0 = 287.51
-T_wk = 287.51 #first day water temp at khulna 
-T_wc_0 = 19.3
+config = ConfigParser()
+config.read('Bechet_config.ini')
+
+outputFilesPath = config.get('data', 'outputFilesPath')
+
+#data vars
+hrVar =config.get('inputVarNames','hrVar')
+doyVar = config.get('inputVarNames','doyVar')
+yrVar = config.get('inputVarNames','yrVar')
+start_date = config.get('data','start_date')
+
+dayCNTvar = config.get('inputVarNames','dayCNTvar')
+windVar = config.get('inputVarNames','windVar')
+sradVar = config.get('inputVarNames','sradVar')
+airTempInputVar = config.get('inputVarNames','airTempInputVar')
+rhVar = config.get('inputVarNames','rhVar')
+airTempCompareVar = config.get('inputVarNames','airTempCompareVar')
+waterTempVar = config.get('obsVarNames', 'waterTempVar')
+
+    
+#Pond specific values
+pond_depth =config.getfloat('modelConstants', 'pondDepth') #meters
+T_wk = config.getfloat('modelConstants', 'initialTemp') #first day water temp at khulna 
 T_wk_vec = []
+Volume =  config.getfloat('modelConstants', 'pondVolume') #m3
+area = config.getfloat('modelConstants', 'pondArea') #m2
+
+#Constants
+water_density = 998 #kg/m3
 specific_heat = 4.18 * (10**3)
-Volume =  6153.05 #m3
-area = 4047 #m2
 
-#open csv file using pandas to create pandas dataframe 
-data = pd.read_csv(f"{filesPath}bechet_etal_input.csv") 
-observed = pd.read_csv(f"{filesPath}observed_khulna.csv")
-observed['date'] = pd.to_datetime(observed['date'])
-
-def find_day_month_year(input_day, start_day = dt.date(2017,1,1)):#dt.date(2016,12,31)):
+def find_day_month_year(input_day, start_day = dt.date(2017,1,1)):
     computed_day = start_day + dt.timedelta(days = float(input_day))
     days_from_year_start = computed_day - dt.date(computed_day.year, 1, 1) + dt.timedelta(days = 1)
-    print("find_day_month_year")
-    print(computed_day)
-    print(days_from_year_start)
     return days_from_year_start.days, computed_day
 
 #create a function to read data for particular day, month and year so we can use it to loop through all days later
-def read_dataline(day_argue, hour):
-    
+def read_dataline(day_argue, hour,data):
     day, day_mon_year = find_day_month_year(day_argue)
     year = day_mon_year.year
-    hour = hour
-    print("read_dataline")
-    print(year)
-    print(day)
-    print(hour)
-    print(day_mon_year)
-    
-    selected_data = data[(data['DAY']== day) & (data['HR'] == hour)& (data['YEAR'] == year)]    
+    selected_data = data[(data[doyVar]== day) & (data[hrVar] == hour)& (data[yrVar] == year)]    
     return selected_data 
-
 
 #pond radiation
 def calculate_Qrap(T_wk):
@@ -89,10 +89,10 @@ def calculate_Qrap(T_wk):
 
 #solar radiation
 #Qra,s = (1-fa)HsS
-def calculate_Qras(day_argue, hour):
-    daily_data = read_dataline(day_argue, hour)
+def calculate_Qras(day_argue, hour,data):
+    daily_data = read_dataline(day_argue, hour,data)
     print(daily_data)
-    solrad = float(daily_data['SRAD'])
+    solrad = float(daily_data[sradVar])
     
     fa = 0 #% algae absorption
 
@@ -105,9 +105,9 @@ def calculate_Qras(day_argue, hour):
 
 #air radiation
 #Qra,a = εw εa σTa4S
-def calculate_Qraa(day_argue, hour):
-    daily_data = read_dataline(day_argue, hour)
-    T_a = float(daily_data['T2M'])+ 273.15 #kelvin
+def calculate_Qraa(day_argue, hour,data):
+    daily_data = read_dataline(day_argue, hour,data)
+    T_a = float(daily_data[t2mVar])+ 273.15 #kelvin
     
     ew = 0.97 #water emissivity
     
@@ -122,11 +122,11 @@ def calculate_Qraa(day_argue, hour):
 
 #evaporation
 #Qevap = -meLwS 
-def calculate_Qevap(day_argue, hour,T_wk):
-    daily_data = read_dataline(day_argue, hour)
-    T_a = float(daily_data['T2M']) +273.15#kelvin
-    RH = float(daily_data['RH2M']) / 100 #needs to be value btwn 0 and 1 not percentage
-    v = float(daily_data['WS2M']) #m/s
+def calculate_Qevap(day_argue, hour,T_wk,data):
+    daily_data = read_dataline(day_argue, hour,data)
+    T_a = float(daily_data[t2mVar]) +273.15#kelvin
+    RH = float(daily_data[rhVar]) / 100 #needs to be value btwn 0 and 1 not percentage
+    v = float(daily_data[windVar]) #m/s
     
     Lw = 2.45 * (10**6) #water latent heat J/kg 
     Dw = 2.4 * (10**-5) #m2/s 
@@ -159,11 +159,11 @@ def calculate_Qevap(day_argue, hour,T_wk):
 
 #convection 
 #Qconv = hconv(Ta – Tp)S
-def calculate_Qconv(day_argue, hour):
-    daily_data = read_dataline(day_argue, hour)
-    T_a = float(daily_data['T2M'])+273.15 #kelvin
+def calculate_Qconv(day_argue, hour,data):
+    daily_data = read_dataline(day_argue, hour,data)
+    T_a = float(daily_data[t2mVar])+273.15 #kelvin
     
-    v = float(daily_data['WS2M']) #m/s
+    v = float(daily_data[windVar]) #m/s
     l = 63.61#pond length in m
     va = 1.5 *(10**-5) #m2/s
     alpha = 2.2 * (10**-5)
@@ -182,8 +182,60 @@ def calculate_Qconv(day_argue, hour):
    
     return Qconv
 
+def finalDataFrame(T_wk_vec,data,element_df):
+    hourly_output = pd.DataFrame(element_df).rename(columns={0:'Qrap', 1:'Qras', 2:'Qraa', 3:'Qevap', 4:'Qconv', 5:'Qnet', 6:'T_wk'})
+    T_wK = np.array(T_wk_vec)
+    T_wC = T_wK.astype(float) - 273.15
+    df = pd.DataFrame(T_wC).rename(columns={0:'T_wC'})
+    fullDf= pd.concat([data, df,hourly_output], axis = 1).drop([t2mVar,sradVar,windVar,rhVar], axis=1)
+    fullDf = fullDf[fullDf['T_wC'].notna()]    
+    
+    finalDf = fullDf
+    return finalDf
+  
+def modelOutputs(T_wk_vec,data,observed):  
+    df1 = finalDataFrame(T_wk_vec, data, element_df)
+    
+    max_temp = df1.groupby(dayCNTvar).max().reset_index()
+    min_temp = df1.groupby(dayCNTvar).min().reset_index()
+    mean_temp = df1.groupby(dayCNTvar).mean().reset_index()
+    daily_data = data.groupby(doyVar).mean()
+    
+    df2 = pd.DataFrame(data={'date': pd.date_range(start='2017-1-1',end='2019-12-31',freq='D')})
+    df2['daily_maxModel'] = max_temp['T_wC']
+    df2['daily_minModel'] = min_temp['T_wC']
+    df2['daily_meanModel'] = mean_temp['T_wC']
+    mergeDf = df2.merge(observed, how='inner', on = ['date'])
+    
+    plt.plot(max_temp.index, max_temp['T_wC'], label="max water temp (modelled)")
+    plt.plot(min_temp.index, min_temp['T_wC'], label="min water temp (modelled)")
+    plt.plot(daily_data.index, daily_data[t2mVar], label="average air temp (measured)")
+    plt.xlabel("Time (days)")
+    plt.ylabel("Temperature (C)")
+    plt.title("Compare daily model data to avg observed air temp")
+    plt.legend()
+    plt.show() 
+
+    return df1,mergeDf
+        
+def modelVSobserved(T_wk_vec,data,observed): #compare daily avg water temp to obs
+    df1 = finalDataFrame(T_wk_vec, data, element_df)
+    
+    max_temp = df1.groupby(dayCNTvar).max()
+    min_temp = df1.groupby(dayCNTvar).min()
+    
+    plt.plot(max_temp.index, max_temp['T_wC'], label="max water temp (modelled)")
+    plt.plot(min_temp.index, min_temp['T_wC'], label="min water temp (modelled)")
+    plt.plot(observed.index, observed['avg_water_temp'], label="average water temp (observed)")
+    plt.xlabel("Time (days)")
+    plt.ylabel("Temperature (C)")
+    plt.title("Compare daily model data to avg observed water temp")
+    plt.legend()
+    plt.show()
+
 # loop for energy flux equation hourly
-def main_simulation_loop():
+def main_simulation_loop(data,observed,filesPath,numberDays,saveFile,outputPath):
+
     global element_df
     element_df = []
     global T_wk
@@ -199,10 +251,10 @@ def main_simulation_loop():
             print(f"Iteration {count} start - T_wk: {T_wk}")
 
             Qrap = calculate_Qrap(T_wk)
-            Qras = calculate_Qras(day_argue, hour)
-            Qraa = calculate_Qraa(day_argue, hour)
-            Qevap = calculate_Qevap(day_argue, hour,T_wk)
-            Qconv = calculate_Qconv(day_argue, hour)
+            Qras = calculate_Qras(day_argue, hour,data)
+            Qraa = calculate_Qraa(day_argue, hour,data)
+            Qevap = calculate_Qevap(day_argue, hour,T_wk,data)
+            Qconv = calculate_Qconv(day_argue, hour,data)
 
             Qnet = Qrap + Qras + Qraa + Qevap + Qconv
             
@@ -216,68 +268,15 @@ def main_simulation_loop():
             T_wk = T_wk_new 
             
             element_df.append([Qrap, Qras, Qraa, Qevap, Qconv, Qnet, T_wk])
-    return T_wk_vec
-  
-def finalDataFrame(T_wk_vec,data,element_df):
-    hourly_output = pd.DataFrame(element_df).rename(columns={0:'Qrap', 1:'Qras', 2:'Qraa', 3:'Qevap', 4:'Qconv', 5:'Qnet', 6:'T_wk'})
-    T_wK = np.array(T_wk_vec)
-    T_wC = T_wK.astype(float) - 273.15
-    df = pd.DataFrame(T_wC).rename(columns={0:'T_wC'})
-    fullDf= pd.concat([data, df,hourly_output], axis = 1).drop(['T2M','SRAD','WS2M','RH2M'], axis=1)
-    fullDf = fullDf[fullDf['T_wC'].notna()]    
-    
-    finalDf = fullDf
-    return finalDf
-  
-def modelOutputs(T_wk_vec,data):  
-    df1 = finalDataFrame(T_wk_vec, data, element_df)
-    #df1["date"] = cf.num2date(df1["DAY"], "days since 2016-12-31")
-    #df1.rename(columns={'DAY':'days_since_start'})
-    #for i in df1.index:
-    #    df1['DAY'][i] = df1['date'][i].day
-    print(df1)
-    max_temp = df1.groupby('DAY_CNT').max().reset_index()
-    min_temp = df1.groupby('DAY_CNT').min().reset_index()
-    mean_temp = df1.groupby('DAY_CNT').mean().reset_index()
-    daily_data = data.groupby('DAY').mean()
-    
-    df2 = pd.DataFrame(data={'date': pd.date_range(start='2017-1-1',end='2019-12-31',freq='D')})
-    df2['daily_maxModel'] = max_temp['T_wC']
-    df2['daily_minModel'] = min_temp['T_wC']
-    df2['daily_meanModel'] = mean_temp['T_wC']
-    mergeDf = df2.merge(observed, how='inner', on = ['date'])
-    
-    plt.plot(max_temp.index, max_temp['T_wC'], label="max water temp (modelled)")
-    plt.plot(min_temp.index, min_temp['T_wC'], label="min water temp (modelled)")
-    plt.plot(daily_data.index, daily_data['T2M'], label="average air temp (measured)")
-    plt.xlabel("Time (days)")
-    plt.ylabel("Temperature (C)")
-    plt.title("Compare daily model data to avg observed air temp")
-    plt.legend()
-    plt.show() 
-    if saveFile == "y":
-        df1.to_csv('/Users/drewr/RemoteData/ACToday/Bangladesh/BDaquaculture/sensitivity_analysis_Bechet/simulated_hourly.csv',index=False)
-        df1.to_csv(f'{filesPath}simulated_hourly.csv',index=False)
-        mergeDf.to_csv(f'{filesPath}simulatedVobserved_daily.csv', index=False)
-    elif saveFile == "n":
-        return df1
         
-def modelVSobserved(T_wk_vec, observed):
-    df1 = finalDataFrame(T_wk_vec, data, element_df)
+    modelOutput = modelOutputs(T_wk_vec,data,observed)
+    if saveFile == "y":
+        modelOutput[0].to_csv(f'{filesPath}{outputPath}simulated_hourly.csv',index=False)
+        modelOutput[1].to_csv(f'{filesPath}{outputPath}simulatedVobserved_daily.csv', index=False)
+        modelVSobserved(T_wk_vec,data,observed)
+    elif saveFile == "n":
+        modelOutput[0]
+        modelVSobserved(T_wk_vec,data,observed)
+        
+def climatology_simulation_loop(data,filesPath,numberDays,saveFile,outputPath):
     
-    max_temp = df1.groupby('DAY_CNT').max()
-    min_temp = df1.groupby('DAY_CNT').min()
-    
-    plt.plot(max_temp.index, max_temp['T_wC'], label="max water temp (modelled)")
-    plt.plot(min_temp.index, min_temp['T_wC'], label="min water temp (modelled)")
-    plt.plot(observed.index, observed['avg_water_temp'], label="average water temp (observed)")
-    plt.xlabel("Time (days)")
-    plt.ylabel("Temperature (C)")
-    plt.title("Compare daily model data to avg observed water temp")
-    plt.legend()
-    plt.show()    
- 
-if __name__ == '__main__':
-    main_simulation_loop()
-    modelOutputs(T_wk_vec,data)
-    modelVSobserved(T_wk_vec, observed)
