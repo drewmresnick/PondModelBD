@@ -26,13 +26,13 @@ df05.to_csv("/Users/drewr/RemoteData/ACToday/Bangladesh/BDaquaculture/dataFiles_
 
 
 #HOURLY DATA
-df = pd.read_csv("/Users/drewr/RemoteData/ACToday/Bangladesh/BDaquaculture/dataFiles_Bechet/climatology/POWER_Point_Hourly_20010102_20211230_022d7833N_089d5333E_LST.csv",skiprows=12)
+df = pd.read_csv("/Users/drewr/RemoteData/ACToday/Bangladesh/BDaquaculture/dataFiles_Bechet/climatology/POWER_Point_Hourly_20010102_20211230_022d7833N_089d5333E_LST.csv")
 climatology = df.groupby(['MO','DY','HR']).agg({'ALLSKY_SFC_SW_DWN':['mean'],'T2M':['mean'],'RH2M':['mean'],'WS2M':['mean']})
 climatology.columns = ['ALLSKY_SFC_SW_DWN','T2M','RH2M','WS2M']
 climatology = climatology.reset_index()
 climatology['T2M'] = climatology['T2M']
 climatology['DAY'] = ""
-climatology = climatology[(climatology['MO']!=2) & (climatology['DY']!=29)]
+#climatology = climatology[(climatology['MO']!=2) & (climatology['DY']!=29)]
 
 for index in climatology.index:
     row = index
