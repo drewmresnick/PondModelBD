@@ -3,59 +3,15 @@ import datetime as dt
 import pandas as pd
 import math
 import matplotlib.pyplot as plt
-from configparser import ConfigParser
-
-config = ConfigParser()
-config.read('GaoMerrick_config.ini')
-outputFilesPath = config.get('data', 'outputFilesPath')
-
-#Setting constant values 
-pi = 3.1415 
-sigma = 2.07e-7 ##stefan boltzman constant
-N = 5.0593 ##empirical coefficient unit m^-2km^-1 mmHg^-1
-water_heat_capacity = 4.184 #joules
-water_density = 997 #kg/m3
-
-#loading in constants for model
-pond_depth =config.getfloat('modelConstants', 'pondDepth') #meters
-T_wk = config.getfloat('modelConstants', 'initialTemp') #first day water temp at khulna 
-volume = config.getfloat('modelConstants', 'pondVolume') #m3
-area = config.getfloat('modelConstants', 'pondArea') #m2
-t = config.getfloat('modelConstants', 'timeStep') #hrs
-
-#loading in variable names for data 
-dayVar = config.get('inputVarNames','dayVar')
-yearVar = config.get('inputVarNames','yearVar')
-windVar = config.get('inputVarNames','windVar')
-sradVar = config.get('inputVarNames','sradVar')
-airTempInputVar = config.get('inputVarNames','airTempInputVar')
-rhVar = config.get('inputVarNames','rhVar')
-airTempCompareVar = config.get('inputVarNames','airTempCompareVar')
-waterTempVar = config.get('obsVarNames','waterTempVar')
-spellDay = config.get('data','spellDay')
-
-#create empty df for outputs
-T_wC_vec = []
-T_wK_vec = []
-phi_net_vec = []
-phi_at_vec = []
-phi_c_vec = []
-phi_ws_vec = []
-phi_e_vec = []
-phi_sn_vec = []
-
-#setting variables
-#time_of_day = [0,3,6,9,12,15,18,21]
-time_of_day = np.arange(0,24,3) #array of 3 hourly windows in a day 
-
+import gmVars
 
 #create a function to get month and year based on integer sequence input
 #using package datetime makes it easier to get month, year (this is also dependant on the the way the data
 # file is set up)
 #data.day[i] needs= float for timedelta() func; (data.day[i] = int in pandas df) 
-def find_day_month_year(input_day, data, start_day = dt.date(2017,12,31)): #dt.date(2016,12,31)):
-    data=data
-    computed_day = start_day + dt.timedelta(days = float(input_day))
+def find_day_month_year(input_day, data, start_date): #dt.date(2016,12,31)):
+    start_date = dt.datetime.strptime(start_date, "%d/%m/%Y")
+    computed_day = (start_date + dt.timedelta(days = float(input_day))).date()
     days_from_year_start = computed_day - dt.date(computed_day.year, 1, 1) + dt.timedelta(days = 1)
 
     return days_from_year_start.days, computed_day
@@ -63,11 +19,9 @@ def find_day_month_year(input_day, data, start_day = dt.date(2017,12,31)): #dt.d
 #create a function to read data for particular day, month and year so we can use it to loop through all days later
 
 def read_dataline(day_argue,data):
-    data=data
-    day, day_mon_year = find_day_month_year(day_argue,data)
+    day, day_mon_year = find_day_month_year(day_argue,data,gmVars.start_date)
     year = day_mon_year.year
-    selected_data = data[(data[dayVar]== day) & (data[yearVar] == year)]
-            
+    selected_data = data[(data[gmVars.dayVar]== day) & (data[gmVars.yearVar] == year)]
     return selected_data      
              
 #setting functions for energy variables in the energy flux equation
@@ -75,8 +29,7 @@ def read_dataline(day_argue,data):
 
 def calculate_phi_sn(day_argue,data):
     daily_data = read_dataline(day_argue,data)
-    print(daily_data)
-    wind_speed = float(daily_data[windVar])
+    wind_speed = float(daily_data[gmVars.windVar])
     
     R_s = 0.035 #considering constant value for daily code #Losordo&Piedrahita
 
@@ -84,7 +37,7 @@ def calculate_phi_sn(day_argue,data):
     
     R= R_s *(1-0.08 * W_z)
     
-    phi_s = float(daily_data[sradVar]) * (1000/24) #Kj/m2/hr in excel file says SRAD_MJ/m2day
+    phi_s = float(daily_data[gmVars.sradVar]) * (1000/24) #Kj/m2/hr in excel file says SRAD_MJ/m2day
 
     phi_sn = phi_s * (1-R)
     
@@ -96,10 +49,10 @@ def calculate_phi_sn(day_argue,data):
 
 def calculate_phi_at(day_argue,data):
     daily_data = read_dataline(day_argue,data)
-    T_ak = float(daily_data[airTempInputVar])
+    T_ak = float(daily_data[gmVars.airTempInputVar])
     e = (0.398 * (10 ** (-5)))*(T_ak ** (2.148))
     r = 0.03 # reflectance of the water surface to longwave radiation
-    phi_at = (1-r)*e*sigma*((T_ak)**4)
+    phi_at = (1-r)*e*gmVars.sigma*((T_ak)**4)
 
     return(phi_at)
 
@@ -110,7 +63,7 @@ def calculate_phi_at(day_argue,data):
 def calculate_phi_ws(T_wk, day_argue,data):
 # set T_wk such that it reads the final output water temp from results in a loop
     
-    phi_ws = 0.97 * sigma * ((T_wk)**4)
+    phi_ws = 0.97 * gmVars.sigma * ((T_wk)**4)
 
     return(phi_ws)
 
@@ -119,9 +72,9 @@ def calculate_phi_ws(T_wk, day_argue,data):
 
 def calculate_phi_e(T_wk,day_argue,data):
     daily_data = read_dataline(day_argue,data)
-    wind_speed = float(daily_data[windVar])
-    T_ak = float(daily_data[airTempInputVar])
-    RH = float(daily_data[rhVar]) / 100
+    wind_speed = float(daily_data[gmVars.windVar])
+    T_ak = float(daily_data[gmVars.airTempInputVar])
+    RH = float(daily_data[gmVars.rhVar]) / 100
     W_2 = wind_speed * 3.6
 
 # e_s, saturated vapor pressure needs to be in T_wc deg celcius
@@ -130,15 +83,15 @@ def calculate_phi_e(T_wk,day_argue,data):
 # e_a, water vapor pressure above the pond surface; unit mmHg
     e_a = RH * 25.374 * math.exp(17.62 - 5271/T_ak)     
 
-    phi_e = float(N* W_2 * (e_s- e_a))
+    phi_e = float(gmVars.N* W_2 * (e_s- e_a))
     return(phi_e)
 
 #create function for phi_c sensible heat transfer
 
 def calculate_phi_c(T_wk, day_argue,data):
     daily_data = read_dataline(day_argue,data)
-    wind_speed = daily_data[windVar]
-    T_ak = float(daily_data[airTempInputVar])
+    wind_speed = daily_data[gmVars.windVar]
+    T_ak = float(daily_data[gmVars.airTempInputVar])
 
     W = float(wind_speed) #m/s per C&B paper
     
@@ -156,12 +109,23 @@ def calculate_phi_c(T_wk, day_argue,data):
 # T_w = H_t/ (water_heat_capacity * water_density)
 
 # loop for energy flux equation 
-def main_simulation_loop(data,waterTemp,filesPath):
-    print(waterTemp[waterTempVar])
+def main_simulation_loop(data,waterTemp,T_wk0,numberDays,filesPath,saveFile):
     #global obsData
     global T_wk
+    T_wk = T_wk0
     count = 0
-    for day_argue in list(range(1, 731)): #731
+    
+    #create empty df for outputs
+    T_wC_vec = []
+    T_wK_vec = []
+    phi_net_vec = []
+    phi_at_vec = []
+    phi_c_vec = []
+    phi_ws_vec = []
+    phi_e_vec = []
+    phi_sn_vec = []
+    
+    for day_argue in list(range(1, numberDays)): #731
         
         count = count + 1
 
@@ -191,12 +155,12 @@ def main_simulation_loop(data,waterTemp,filesPath):
         T_wC = T_wk - 273.15 #change to degree celcius   
 
 
-        H_t_1 = T_wC * volume * water_heat_capacity * water_density
+        H_t_1 = T_wC * gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density
         #check if K or C
         print(f'iteration: {count}, H_t_1: {H_t_1}')
 
-        H_t = H_t_1 + (phi_net * area * t)
-        T_w = H_t/ (volume * water_heat_capacity * water_density)
+        H_t = H_t_1 + (phi_net * gmVars.area * gmVars.t)
+        T_w = H_t/ (gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density)
         print(f'iteration: {count}, T_w: {T_w}')
 
         #add T_w to a list somehow
@@ -216,32 +180,47 @@ def main_simulation_loop(data,waterTemp,filesPath):
     fluxes['phi_sn'] = phi_sn_vec
     fluxes['phi_net'] = phi_net_vec
     fluxes['T_wC'] = T_wC_vec
-    fluxes['observed_H20'] = data[airTempCompareVar]
+    fluxes['observed_H20'] = data[gmVars.airTempCompareVar]
     
-    fluxes.to_csv(f'{filesPath}{outputFilesPath}GaoMerrick_output_fluxes.csv',index=True)    
 
-    df1 = data
+    df1 = data[0:(numberDays-1)]
     df1['simTemp_C'] = T_wC_vec
     df1['simTemp_K'] = T_wK_vec
     
-    df1.to_csv(f'{filesPath}{outputFilesPath}GaoMerrick_output.csv',index=True)
 
     plt.plot(T_wC, label = 'Simulated Water temp')
-    plt.plot(data[airTempCompareVar], label = 'Observed Air temp')
+    plt.plot(data[gmVars.airTempCompareVar], label = 'Observed Air temp')
     plt.plot(waterTemp['day_avg'], label = 'Observed Water temp')
     plt.gca().legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.xlabel("Time (days)")
     plt.ylabel("Temperature (C)")
     plt.title("Compare model data to observed/measured temps")
     plt.legend()
-    plt.show()
-    plt.savefig('f{filesPath}{outputFilesPath}GaoMerrick_output.png')
     
-def climatology_simulation_loop(data,filesPath):
+    if saveFile == "y":
+        plt.savefig('f{filesPath}{gmVars.outputFilesPath}GaoMerrick_output.png')
+        fluxes.to_csv(f'{filesPath}{gmVars.outputFilesPath}GaoMerrick_output_fluxes.csv',index=True)    
+        df1.to_csv(f'{filesPath}{gmVars.outputFilesPath}GaoMerrick_output.csv',index=True)
+    elif saveFile=="n":
+        plt.show()
+
+def climatology_simulation_loop(data,T_wk0,numberDays,filesPath,saveFile):
     #global obsData
     global T_wk
+    T_wk = T_wk0
     count = 0
-    for day_argue in list(range(1, 366)):
+    
+    #create empty df for outputs
+    T_wC_vec = []
+    T_wK_vec = []
+    phi_net_vec = []
+    phi_at_vec = []
+    phi_c_vec = []
+    phi_ws_vec = []
+    phi_e_vec = []
+    phi_sn_vec = []
+    
+    for day_argue in list(range(1, numberDays)):
         
         count = count + 1
 
@@ -271,19 +250,20 @@ def climatology_simulation_loop(data,filesPath):
         T_wC = T_wk - 273.15 #change to degree celcius   
 
 
-        H_t_1 = T_wC * volume * water_heat_capacity * water_density
+        H_t_1 = T_wC * gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density
         #check if K or C
         print(f'iteration: {count}, H_t_1: {H_t_1}')
 
-        H_t = H_t_1 + (phi_net * area * t)
-        T_w = H_t/ (volume * water_heat_capacity * water_density)
+        H_t = H_t_1 + (phi_net * gmVars.area * gmVars.t)
+        T_w = H_t/ (gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density)
         print(f'iteration: {count}, T_w: {T_w}')
 
         #add T_w to a list somehow
         T_wC_vec.append(T_w)
 
         T_wk = T_w + 273.15 #convert back to kelvin
-        T_wK_vec.append(T_wk)      
+        T_wK_vec.append(T_wk)     
+        
     fluxes = pd.DataFrame(phi_net_vec,columns=['phi_net'])
     fluxes['phi_at'] = phi_at_vec
     fluxes['phi_ws'] = phi_ws_vec
@@ -293,20 +273,21 @@ def climatology_simulation_loop(data,filesPath):
     fluxes['phi_net'] = phi_net_vec
     fluxes['T_wC'] = T_wC_vec
     
-    fluxes.to_csv(f'{filesPath}{outputFilesPath}GaoMerrick_outputClimatology{spellDay}daySpell_fluxes.csv',index=True)    
-
-    df1 = data
+    df1 = data[0:(numberDays-1)]
     df1['simTemp_C'] = T_wC_vec
     df1['simTemp_K'] = T_wK_vec
     
-    df1.to_csv(f'{filesPath}{outputFilesPath}GaoMerrick_outputClimatology{spellDay}daySpell.csv',index=True)
-
     plt.plot(T_wC_vec, label = 'Simulated Water temp')
-    plt.plot(data['T2M_C'], label = f'Air temp (climatology;{spellDay} day spells)')
+    plt.plot(data['T2M_C'], label = f'Air temp (climatology;{gmVars.spellDay} day spells)')
     plt.gca().legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.xlabel("Time (days)")
     plt.ylabel("Temperature (C)")
     plt.title("Compare climatology model data to measured temps")
     plt.legend()
-    #plt.show()
-    plt.savefig(f'{filesPath}/{outputFilesPath}/GaoMerrick_outputClimatology{spellDay}daySpell.png')
+    
+    if saveFile =="y":
+        df1.to_csv(f'{filesPath}{gmVars.outputFilesPath}GaoMerrick_outputClimatology{gmVars.spellDay}daySpell.csv',index=True)
+        fluxes.to_csv(f'{filesPath}{gmVars.outputFilesPath}GaoMerrick_outputClimatology{gmVars.spellDay}daySpell_fluxes.csv',index=True)      
+        plt.savefig(f'{filesPath}/{gmVars.outputFilesPath}/GaoMerrick_outputClimatology{gmVars.spellDay}daySpell.png')
+    elif saveFile == "n":
+        plt.show()
