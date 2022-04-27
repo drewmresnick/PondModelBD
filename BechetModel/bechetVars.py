@@ -25,7 +25,7 @@ t2mVar = config.get('inputVarNames','t2mVar')
 rhVar = config.get('inputVarNames','rhVar')
 waterTempVar = config.get('obsVarNames', 'waterTempVar')
 
-#Pond specific values
+#Pond constants
 pond_depth =config.getfloat('modelConstants', 'pondDepth') #meters 
 Volume =  config.getfloat('modelConstants', 'pondVolume') #m3
 area = config.getfloat('modelConstants', 'pondArea') #m2

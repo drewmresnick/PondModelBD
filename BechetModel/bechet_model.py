@@ -31,14 +31,15 @@ import math
 import matplotlib.pyplot as plt
 import bechetVars
 
-def find_day_month_year(input_day, start_day = dt.date(2017,1,1)):
-    computed_day = start_day + dt.timedelta(days = float(input_day))
+def find_day_month_year(input_day, start_date):
+    start_date = dt.datetime.strptime(start_date, "%d/%m/%Y")
+    computed_day = (start_date + dt.timedelta(days = float(input_day))).date()
     days_from_year_start = computed_day - dt.date(computed_day.year, 1, 1) + dt.timedelta(days = 1)
     return days_from_year_start.days, computed_day
 
 #create a function to read data for particular day, month and year so we can use it to loop through all days later
 def read_dataline(day_argue, hour,data):
-    day, day_mon_year = find_day_month_year(day_argue)
+    day, day_mon_year = find_day_month_year(day_argue,bechetVars.start_date)
     year = day_mon_year.year
     selected_data = data[(data[bechetVars.dayCNTvar]== day) & (data[bechetVars.hrVar] == hour)& (data[bechetVars.yrVar] == year)]
     return selected_data 
@@ -265,6 +266,7 @@ def climatology_simulation_loop(data,T_wk0,filesPath,numberDays,saveFile,outputP
 
     global element_df
     element_df = []
+    T_wk_vec = []
     global T_wk
     global hourly_output  
     
