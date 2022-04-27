@@ -16,4 +16,8 @@ elif gmVars.dataType == 'C':
     data = pd.read_csv(f'{gmVars.filesPath}{gmVars.inputFileName}')
     GaoMerrick_model.climatology_simulation_loop(data, gmVars.T_wk0, gmVars.numberDays, gmVars.filesPath,gmVars.saveFile)
     
-
+print("---MODEL RUN INFO---")
+if gmVars.dataType == 'C':
+    print(f"Climatology data run for {gmVars.numberDays} days")
+elif gmVars.dataType == 'H':
+    print(f"Hourly data run for {gmVars.numberDays} days")
