@@ -49,7 +49,7 @@ def calculate_phi_sn(day_argue,data):
 
 def calculate_phi_at(day_argue,data):
     daily_data = read_dataline(day_argue,data)
-    T_ak = float(daily_data[gmVars.airTempInputVar])
+    T_ak = float(daily_data[gmVars.airTempVar])
     e = (0.398 * (10 ** (-5)))*(T_ak ** (2.148))
     r = 0.03 # reflectance of the water surface to longwave radiation
     phi_at = (1-r)*e*gmVars.sigma*((T_ak)**4)
@@ -73,7 +73,7 @@ def calculate_phi_ws(T_wk, day_argue,data):
 def calculate_phi_e(T_wk,day_argue,data):
     daily_data = read_dataline(day_argue,data)
     wind_speed = float(daily_data[gmVars.windVar])
-    T_ak = float(daily_data[gmVars.airTempInputVar])
+    T_ak = float(daily_data[gmVars.airTempVar])
     RH = float(daily_data[gmVars.rhVar]) / 100
     W_2 = wind_speed * 3.6
 
@@ -91,7 +91,7 @@ def calculate_phi_e(T_wk,day_argue,data):
 def calculate_phi_c(T_wk, day_argue,data):
     daily_data = read_dataline(day_argue,data)
     wind_speed = daily_data[gmVars.windVar]
-    T_ak = float(daily_data[gmVars.airTempInputVar])
+    T_ak = float(daily_data[gmVars.airTempVar])
 
     W = float(wind_speed) #m/s per C&B paper
     
@@ -109,7 +109,7 @@ def calculate_phi_c(T_wk, day_argue,data):
 # T_w = H_t/ (water_heat_capacity * water_density)
 
 # loop for energy flux equation 
-def main_simulation_loop(data,waterTemp,T_wk0,numberDays,filesPath,saveFile):
+def main_simulation_loop(data,waterTemp,T_wk0,numberDays,saveFile):
     #global obsData
     global T_wk
     T_wk = T_wk0
@@ -129,18 +129,13 @@ def main_simulation_loop(data,waterTemp,T_wk0,numberDays,filesPath,saveFile):
         
         count = count + 1
 
-        print(f"Iteration {count} start - T_wk: {T_wk}")
+        print(f"Iteration {count} start temp: {T_wk}")
 
         phi_sn = calculate_phi_sn(day_argue,data)
-        print(f'phi_sn: {phi_sn}')
         phi_at = calculate_phi_at(day_argue,data)
-        print(f'phi_at: {phi_at}')
         phi_ws = calculate_phi_ws(T_wk, day_argue,data)
-        print(f'phi_ws: {phi_ws}')  
         phi_e = calculate_phi_e(T_wk, day_argue,data)
-        print(f'phi_e: {phi_e}')
         phi_c = calculate_phi_c(T_wk, day_argue,data)
-        print(f'phi_c: {phi_c}')        
         phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c 
 
         phi_at_vec.append(phi_at)
@@ -149,19 +144,16 @@ def main_simulation_loop(data,waterTemp,T_wk0,numberDays,filesPath,saveFile):
         phi_c_vec.append(phi_c)
         phi_net_vec.append(phi_net)
         phi_sn_vec.append(phi_sn)
-
-        print(f'iteration: {count}, phi_net: {phi_net}')
         
         T_wC = T_wk - 273.15 #change to degree celcius   
 
 
         H_t_1 = T_wC * gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density
         #check if K or C
-        print(f'iteration: {count}, H_t_1: {H_t_1}')
 
         H_t = H_t_1 + (phi_net * gmVars.area * gmVars.t)
         T_w = H_t/ (gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density)
-        print(f'iteration: {count}, T_w: {T_w}')
+        print(f'    Iteration: {count} output temp: {T_w}')
 
         #add T_w to a list somehow
         T_wC_vec.append(T_w)
@@ -172,25 +164,21 @@ def main_simulation_loop(data,waterTemp,T_wk0,numberDays,filesPath,saveFile):
     
     T_wC = np.array(T_wC_vec)
     
-    fluxes = pd.DataFrame(phi_net_vec,columns=['phi_net'])
-    fluxes['phi_at'] = phi_at_vec
-    fluxes['phi_ws'] = phi_ws_vec
-    fluxes['phi_e'] = phi_e_vec
-    fluxes['phi_c'] = phi_c_vec
-    fluxes['phi_sn'] = phi_sn_vec
-    fluxes['phi_net'] = phi_net_vec
-    fluxes['T_wC'] = T_wC_vec
-    fluxes['observed_H20'] = data[gmVars.airTempCompareVar]
-    
-
-    df1 = data[0:(numberDays-1)]
+    df1 = data.loc[0:(numberDays-2)]
+    df1['phi_at'] = phi_at_vec
+    df1['phi_ws'] = phi_ws_vec
+    df1['phi_e'] = phi_e_vec
+    df1['phi_c'] = phi_c_vec
+    df1['phi_sn'] = phi_sn_vec
+    df1['phi_net'] = phi_net_vec
     df1['simTemp_C'] = T_wC_vec
     df1['simTemp_K'] = T_wK_vec
+    df1['observedWater_dailyAvg'] = waterTemp[gmVars.waterTempVar]
     
 
     plt.plot(T_wC, label = 'Simulated Water temp')
-    plt.plot(data[gmVars.airTempCompareVar], label = 'Observed Air temp')
-    plt.plot(waterTemp['day_avg'], label = 'Observed Water temp')
+    plt.plot(data[gmVars.airTempVarC], label = 'Air temp')
+    plt.plot(waterTemp[gmVars.waterTempVar], label = 'Observed Water temp')
     plt.gca().legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.xlabel("Time (days)")
     plt.ylabel("Temperature (C)")
@@ -198,13 +186,12 @@ def main_simulation_loop(data,waterTemp,T_wk0,numberDays,filesPath,saveFile):
     plt.legend()
     
     if saveFile == "y":
-        plt.savefig('f{filesPath}{gmVars.outputFilesPath}GaoMerrick_output.png')
-        fluxes.to_csv(f'{filesPath}{gmVars.outputFilesPath}GaoMerrick_output_fluxes.csv',index=True)    
-        df1.to_csv(f'{filesPath}{gmVars.outputFilesPath}GaoMerrick_output.csv',index=True)
+        plt.savefig(f'{gmVars.outputFilesPath}{gmVars.outputFilesName}.png')   
+        df1.to_csv(f'{gmVars.outputFilesPath}{gmVars.outputFilesName}.csv',index=True)
     elif saveFile=="n":
         plt.show()
 
-def climatology_simulation_loop(data,T_wk0,numberDays,filesPath,saveFile):
+def climatology_simulation_loop(data,T_wk0,numberDays,saveFile):
     #global obsData
     global T_wk
     T_wk = T_wk0
@@ -224,18 +211,13 @@ def climatology_simulation_loop(data,T_wk0,numberDays,filesPath,saveFile):
         
         count = count + 1
 
-        print(f"Iteration {count} start - T_wk: {T_wk}")
+        print(f"Iteration {count} start temp: {T_wk}")
 
         phi_sn = calculate_phi_sn(day_argue,data)
-        print(f'phi_sn: {phi_sn}')
         phi_at = calculate_phi_at(day_argue,data)
-        print(f'phi_at: {phi_at}')
         phi_ws = calculate_phi_ws(T_wk, day_argue,data)
-        print(f'phi_ws: {phi_ws}')  
         phi_e = calculate_phi_e(T_wk, day_argue,data)
-        print(f'phi_e: {phi_e}')
-        phi_c = calculate_phi_c(T_wk, day_argue,data)
-        print(f'phi_c: {phi_c}')        
+        phi_c = calculate_phi_c(T_wk, day_argue,data)    
         phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c 
 
         phi_at_vec.append(phi_at)
@@ -244,38 +226,31 @@ def climatology_simulation_loop(data,T_wk0,numberDays,filesPath,saveFile):
         phi_c_vec.append(phi_c)
         phi_net_vec.append(phi_net)
         phi_sn_vec.append(phi_sn)
-
-        print(f'iteration: {count}, phi_net: {phi_net}')
         
         T_wC = T_wk - 273.15 #change to degree celcius   
 
-
         H_t_1 = T_wC * gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density
         #check if K or C
-        print(f'iteration: {count}, H_t_1: {H_t_1}')
 
         H_t = H_t_1 + (phi_net * gmVars.area * gmVars.t)
         T_w = H_t/ (gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density)
-        print(f'iteration: {count}, T_w: {T_w}')
+        print(f'    Iteration {count} output temp: {T_w}')
 
         #add T_w to a list somehow
         T_wC_vec.append(T_w)
 
         T_wk = T_w + 273.15 #convert back to kelvin
         T_wK_vec.append(T_wk)     
-        
-    fluxes = pd.DataFrame(phi_net_vec,columns=['phi_net'])
-    fluxes['phi_at'] = phi_at_vec
-    fluxes['phi_ws'] = phi_ws_vec
-    fluxes['phi_e'] = phi_e_vec
-    fluxes['phi_c'] = phi_c_vec
-    fluxes['phi_sn'] = phi_sn_vec
-    fluxes['phi_net'] = phi_net_vec
-    fluxes['T_wC'] = T_wC_vec
     
-    df1 = data[0:(numberDays-1)]
+    df1 = data.loc[0:(numberDays-2)]
     df1['simTemp_C'] = T_wC_vec
     df1['simTemp_K'] = T_wK_vec
+    df1['phi_at'] = phi_at_vec
+    df1['phi_ws'] = phi_ws_vec
+    df1['phi_e'] = phi_e_vec
+    df1['phi_c'] = phi_c_vec
+    df1['phi_sn'] = phi_sn_vec
+    df1['phi_net'] = phi_net_vec
     
     plt.plot(T_wC_vec, label = 'Simulated Water temp')
     plt.plot(data['T2M_C'], label = f'Air temp (climatology;{gmVars.spellDay} day spells)')
@@ -286,8 +261,7 @@ def climatology_simulation_loop(data,T_wk0,numberDays,filesPath,saveFile):
     plt.legend()
     
     if saveFile =="y":
-        df1.to_csv(f'{filesPath}{gmVars.outputFilesPath}GaoMerrick_outputClimatology{gmVars.spellDay}daySpell.csv',index=True)
-        fluxes.to_csv(f'{filesPath}{gmVars.outputFilesPath}GaoMerrick_outputClimatology{gmVars.spellDay}daySpell_fluxes.csv',index=True)      
-        plt.savefig(f'{filesPath}/{gmVars.outputFilesPath}/GaoMerrick_outputClimatology{gmVars.spellDay}daySpell.png')
+        df1.to_csv(f'{gmVars.outputFilesPath}{gmVars.outputFilesName}.csv',index=True)
+        plt.savefig(f'{gmVars.outputFilesPath}{gmVars.outputFilesName}.png')
     elif saveFile == "n":
         plt.show()
