@@ -1,58 +1,21 @@
 # PondModelBD
-Repository for building energy flux model for pond aquaculture in Bangladesh.
+## Repository for building energy flux model for pond aquaculture in Bangladesh.
 
 Reach out to Drew Resnick (drewr@iri.columbia.edu) for access to input data.
 
-Not all the files in this folder are up-to-date. The two main working files are briefly
-outlines below.
+### **There are two models under development in this repository, based off previously published research.**
 
-1. Bechet_model.py (file to run the model)
+1. (**Béchet model**)[https://pubs.acs.org/doi/abs/10.1021/es1040706?casa_token=ESVwMRuKWPcAAAAA:HW2Sep8goMov3i3losRrXzoIGboixMLpDiK4P8XxgKxK1asz4I_xuzJ0tKGTFrIVi4oJjamJCc3QAA]
 
-    Model elements:
+2. (**Gao&Merrick model**)[https://www.semanticscholar.org/paper/Simulation-of-temperature-and-salinity-in-a-fully-Gao-Merrick/e062ad4f52f4eed06c57285d871e8b8f2257b57d]
 
-    Qra,p: radiation from pond surface (W)
-    Qra,s: total (direct and diffuse) solar radiation (W)
-    Qra,a: radiation from air to pond (W)
-    Qev: evaporative heat flux (W)
-    Qconv: convective flux at pond surface (W)
-    Qcond: conductive flux with ground at pond bottom (W) #not using
-    Qi: heat flux associated with water inflow (W)
-    Qr: heat flux induced by rain (W) #not using
+Please refer to the main runFiles in each model subdirectory for more model specific information regarding model assumptions.
 
-    This file will ask for three inputs when run:
-        1. number of days to run the model
-        2. directory path to where files are held
-        3. if you would like to save the outputs (enter (y) if you would like to run
-                                                  accompanying diagnostics file
-                                                  for the model)
+#### Repository structure
 
-2. Diagnostics_bechet.py (file to run diagnostics on outputs from Bechet_model.py)   
+#### virtual environment setup
 
-    This script will run diagnostics plots for outputs of the bechet_model.py python script.
+model citations:
+1. Béchet et al (2011). Universal Temperature Model for Shallow Algal Ponds Provides Improved Accuracy. *Environ. Sci. Technol. 45(8): pp 3702-3709.
 
-    When you run this script, it will ask you a series of questions to determine which
-    plots to generate.
-
-    Check the outputs from the model to determine which year(s) and month(s) will be valid
-    as inputs for diagnostics. This depends on number of days you ran the model for.
-
-    Please note that there were issues with displaying plots without saving them when running
-    on python directly in terminal. If your plots do not display, please try using a GUI such
-    as spyder or jupyter notebook.
-
-    Use this script to generate plots for:
-        1) hourly fluxes for any month and year
-        2) air temp (measured) vs water temp (Modeled) for any month and year
-        3) hourly modeleld water temp for any month and year
-        4) hourly changes in heat flux (annual avg) for any year
-
-    Plots will be saved to current working directory if you return "y" as input for
-    this option when running the script.                                   
-
-**python packages required:**
-1. pandas
-2. matplotlib
-3. cftime
-4. datetime
-5. math
-6. numpy
+2. Gao, Merrick (1996). Simulation of temperature and salinity in a full mixed pond. *Environmental Software*. 11: pp 173-178.
