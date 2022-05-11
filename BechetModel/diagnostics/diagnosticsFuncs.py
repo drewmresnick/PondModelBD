@@ -24,18 +24,15 @@ this option when running the script.
 """
 
 import pandas as pd
-import matplotlib.pyplot as plt 
-
-outputPath = '/Users/drewr/RemoteData/ACToday/Bangladesh/BDaquaculture/dataFiles_Bechet/outputs/diagnostics/monthly2018/Watts/'
-Modeled = pd.read_csv("/Users/drewr/RemoteData/ACToday/Bangladesh/BDaquaculture/dataFiles_Bechet/outputs/fullOutput_hourlyBechet_Wm2.csv")
-observed = pd.read_csv("/Users/drewr/RemoteData/ACToday/Bangladesh/BDaquaculture/dataFiles_Bechet/inputs/observed_khulna.csv")
-inputData= pd.read_csv("/Users/drewr/RemoteData/ACToday/Bangladesh/BDaquaculture/dataFiles_Bechet/inputs/bechet_etal_input.csv")
-Modeled['T_aC'] = inputData['T2M']
-observed["date"] = pd.to_datetime(observed["date"])
+import matplotlib.pyplot as plt
 
 #function that generates plots for model outputs
-def plotMonthlyModeled(month):
+def plotMonthlyModeled(Modeled,month,year,units,fluxes,saveFigs,outputPath):
+    print("MODELED")
+    print(Modeled)
     modelSel = Modeled[(Modeled["YR"]==year) & (Modeled["MO"]==month)]
+    print("MODELESEL")
+    print(modelSel)
     if units == "W":
         label = "heat flux (W)"
     elif units == "W/m2":
@@ -56,11 +53,12 @@ def plotMonthlyModeled(month):
             plt.show()
 
 #function that generates plots observed temp data against modeled temp
-def plotMonthlyObserved(month):
+def plotMonthlyObserved(observed,Modeled,month,year,saveFigs,outputPath):
     print(f" complete month {month}")
     measuredSel = observed[(pd.DatetimeIndex(observed["date"]).year ==year) & \
                            (pd.DatetimeIndex(observed["date"]).month ==month)]
     modelSel = Modeled[(Modeled["YR"]==year) & (Modeled["MO"]==month)]
+    print(modelSel)
     plt.plot(measuredSel["days_numbered"], measuredSel["avg_air_temp"])
     plt.title(label=f"daily average air temp for month: {month} year: {year}")
     plt.xlabel("days since start")
@@ -84,7 +82,7 @@ def plotMonthlyObserved(month):
         plt.show()
 
 #function that generates annual avergae change in heat flux        
-def plotYearlyAvg(year):
+def plotYearlyAvg(Modeled,year,units,saveFigs,outputPath):
     modelSel = Modeled[Modeled["YR"]==year]
     grouped = modelSel.groupby(['HR'])
     if units == "W":
@@ -107,48 +105,7 @@ def plotYearlyAvg(year):
     elif saveFigs == "n":
         plt.show()
 
-print("This code can run plots for hourly temperature and individual energy flux.")
-outputs = input("Include fluxes? (y/n): ")
 
-saveFigs = input("save figures (y/n): ")
-
-units = input("fluxes in units W or W/m2? (W / W/m2): ")
-
-year = float(input("input year (2017/2018/2019): "))
-
-allMonth = input("all months? (y/n/custom): ")
-
-if outputs == "y":
-    if units == "W":
-        fluxes = ["Qrap", "Qras", "Qraa", "Qevap", "Qconv"]
-    elif units == "W/m2":
-        fluxes = ["Qrap_Wm-2", "Qras_Wm-2", "Qraa_Wm-2", "Qevap_Wm-2", "Qconv_Wm-2"]
-elif outputs == "n":
-    fluxes = ["T_wC"]
-
-if allMonth == "y":
-    month = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-    print("***generating plots for all months***")
-    plotYearlyAvg(year)
-    for m in month:
-        month = float(m)
-        plotMonthlyModeled(month)
-        plotMonthlyObserved(month)
-elif allMonth == "n":
-    month = float(input("input month as integer: "))
-    print(f"***generating plots for month: {month}***")
-    plotMonthlyModeled(month)
-    plotMonthlyObserved(month)
-    plotYearlyAvg(year)
-elif allMonth == "custom":
-    monthCustom = input("input months you want as integers (eg: 1 2 3): ")
-    month = monthCustom.split()
-    print(f"***generating plots for months: {monthCustom}***")
-    plotYearlyAvg(year)
-    for m in month:
-        month = float(m)
-        plotMonthlyModeled(month)  
-        plotMonthlyObserved(month)
 
 
 
