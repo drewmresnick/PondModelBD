@@ -10,14 +10,18 @@ outputPath = config.get('data','outputFilesPath')
 #data info
 inputFileName = config.get('data', 'inputFile')
 obsFileName = config.get('data','observationData')
+outputFileNameHr = config.get('data', 'outputFileNameHr')
+outputFileNameDy = config.get('data', 'outputFileNameDy')
 start_date = config.get('data','start_date')
 dataType = config.get('data', 'dataType')
 spellDay = config.get('data','spellDay')
 start_date = config.get('data','start_date')
+end_date = config.get('data','end_date')
 
 #data vars
 hrVar =config.get('inputVarNames','hrVar')
 yrVar = config.get('inputVarNames','yrVar')
+dyVar = config.get('inputVarNames','dyVar')
 dayCNTvar = config.get('inputVarNames','dayCNTvar')
 windVar = config.get('inputVarNames','windVar')
 sradVar = config.get('inputVarNames','sradVar')
