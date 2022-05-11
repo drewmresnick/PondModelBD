@@ -1,29 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Aug 12 12:19:35 2021
 
-@author: sanketa, Drew
-
-Model elements:
-    
-Qra,p: radiation from pond surface (W)
-Qra,s: total (direct and diffuse) solar radiation (W)
-Qra,a: radiation from air to pond (W)
-Qev: evaporative heat flux (W)
-Qconv: convective flux at pond surface (W)
-Qcond: conductive flux with ground at pond bottom (W) #not using
-Qi: heat flux associated with water inflow (W)
-Qr: heat flux induced by rain (W) #not using
-
-This file will ask for three inputs when run:
-    1. number of days to run the model
-    2. directory path to where files are held
-    3. if you would like to save the outputs (enter (y) if you would like to run
-                                              accompanying diagnostics file 
-                                              for the model)
-
-"""
 import numpy as np
 import datetime as dt
 import pandas as pd

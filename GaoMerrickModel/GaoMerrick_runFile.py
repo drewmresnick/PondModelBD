@@ -1,9 +1,14 @@
 # IRI aquaculture Bangladesh 
 
-##### Simple Energy flux model for mixed pond  #######
-# Assumptions:- 
-#     Single layer mixed pond
-#     morning minimum temperature (Tmin_air) as morning minimum dry-bulb temperature (line 816; cmd+F T_d) in place of Relative humidity
+"""
+Simple Energy flux model for mixed pond  #######
+
+This model runs at a daily time step.
+
+ Assumptions:
+     1. Single layer mixed pond
+"""
+
 import GaoMerrick_model
 import pandas as pd
 import gmVars
