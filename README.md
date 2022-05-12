@@ -1,5 +1,6 @@
 # PondModelBD
-Repository for building energy flux model for pond aquaculture in Bangladesh.
+Repository for building energy flux model for pond aquaculture in Bangladesh.  
+Each model has the option to run on weather datasets (daily or hourly, dependent on the model) or on climatological datasets.
 
 Reach out to Drew Resnick (drewr@iri.columbia.edu) for access to input data.
 
@@ -51,7 +52,7 @@ The file structure for each model is as follows:
     2. model_runFile.py : Main runtime file that runs the model.  
     3. modelVars.py : Variables file which reads in variables from configuration file.  
     4. modelFuncs.py : Functions file which includes all the model and plotting functions.  
-
+There is an additional python file `climatologyDS_setup.py` which can be used to make climatology datasets if you wish to run the model on climatology data.
 
 
 #### Python packages needed for runtime  
