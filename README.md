@@ -2,7 +2,7 @@
 Repository for building energy flux model for pond aquaculture in Bangladesh.  
 Each model has the option to run on weather datasets (daily or hourly, dependent on the model) or on climatological datasets.
 
-Reach out to Drew Resnick (drewr@iri.columbia.edu) for access to input data.
+Reach out to Drew Resnick (drewr@iri.columbia.edu) for access to sample data used in development of the models.
 
 
 **There are two models under development in this repository, based off previously published research.**  
