@@ -82,6 +82,6 @@ There is an additional python file `climatologyDS_setup.py` which can be used to
 
 
 #### Model collaborators emails  
-[Sanketa Kadam](kadamsanketa18@gmail.com)  
-[Quentin Béchet](quentin.bechet@veolia.com)  
-[Walter Baethgen](baethgen@iri.columbia.edu)  
+Sanketa Kadam : kadamsanketa18@gmail.com  
+Quentin Béchet : quentin.bechet@veolia.com   
+Walter Baethgen : baethgen@iri.columbia.edu  
