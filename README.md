@@ -1,4 +1,4 @@
-# PondModelBD
+# Bangladesh Pond Temperature Model
 Repository for building energy flux model for pond aquaculture in Bangladesh.  
 Each model has the option to run on weather datasets (daily or hourly, dependent on the model) or on climatological datasets.
 
