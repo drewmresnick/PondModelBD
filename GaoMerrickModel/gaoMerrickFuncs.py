@@ -5,9 +5,6 @@ import matplotlib.pyplot as plt
 import gmVars
 
 #create a function to get month and year based on integer sequence input
-#using package datetime makes it easier to get month, year (this is also dependant on the the way the data
-# file is set up)
-#data.day[i] needs= float for timedelta() func; (data.day[i] = int in pandas df) 
 def find_day_month_year(input_day, data, start_date): #dt.date(2016,12,31)):
     start_date = dt.datetime.strptime(start_date, "%d/%m/%Y")
     computed_day = (start_date + dt.timedelta(days = float(input_day))).date()
@@ -23,9 +20,8 @@ def read_dataline(day_argue,data):
     selected_data = data[(data[gmVars.dayVar]== day) & (data[gmVars.yearVar] == year)]
     return selected_data      
              
-#setting functions for energy variables in the energy flux equation
-#calculate phi_sn pr penetrating short-wae solar radiation
-
+#Solar radiation, pp.174 eqn.2 (Gao & Merrick 1996)
+#phi_sn = phi_s * (1-R)
 def calculate_phi_sn(day_argue,data):
     daily_data = read_dataline(day_argue,data)
     wind_speed = float(daily_data[gmVars.windVar])
@@ -42,10 +38,8 @@ def calculate_phi_sn(day_argue,data):
     
     return phi_sn
 
-#creating a function for phi_at atmospheric radiation following the equation in variables excel sheet
-#shammun includes cloud fraction in the equation
-
-
+#Atmospheric radiation, pp.174 eqn.3 (Gao & Merrick 1996)
+#phi_at = (1-r)*e*sigma*((T_ak)**4)
 def calculate_phi_at(day_argue,data):
     daily_data = read_dataline(day_argue,data)
     T_ak = float(daily_data[gmVars.airTempVar])
@@ -55,38 +49,30 @@ def calculate_phi_at(day_argue,data):
 
     return(phi_at)
 
-#create function for phi_ws water surface radiation
-#this equation need water surface temp T_wk (kelvin), this will be initialized using the t-1 timestep value
-# from the water temp data file (ideally Jan 1st 2018, morning water temp)
-
+#Water surface radiation, pp.174 eqn. 4 (Gao & Merrick 1996)
+#phi_ws = 0.97*sigma*((T_wk)**4)
 def calculate_phi_ws(T_wk, day_argue,data):
-# set T_wk such that it reads the final output water temp from results in a loop
-    
     phi_ws = 0.97 * gmVars.sigma * ((T_wk)**4)
 
     return(phi_ws)
 
-#create function for phi_e evaporative heat loss
-#here, we use average dailt dew point temp in place of relative humidity values
-
+#Evaporative heat loss, pp.174 eqn. 5-7 (Gao & Merrick 1996)
+#phi_e = N*v*(e_s- e_a)
 def calculate_phi_e(T_wk,day_argue,data):
     daily_data = read_dataline(day_argue,data)
     wind_speed = float(daily_data[gmVars.windVar])
     T_ak = float(daily_data[gmVars.airTempVar])
     RH = float(daily_data[gmVars.rhVar]) / 100
     W_2 = wind_speed * 3.6
-
-# e_s, saturated vapor pressure needs to be in T_wc deg celcius
+    
     e_s = 25.374 * math.exp(17.62 - 5271/T_wk)
-
-# e_a, water vapor pressure above the pond surface; unit mmHg
     e_a = RH * 25.374 * math.exp(17.62 - 5271/T_ak)     
 
     phi_e = float(gmVars.N* W_2 * (e_s- e_a))
     return(phi_e)
 
-#create function for phi_c sensible heat transfer
-
+#Sensible heat transfer, pp.175 eqn. 8-10 (Gao & Merrick 1996)
+#phi_c = 1.5701*W*(T_wc-T_ac))
 def calculate_phi_c(T_wk, day_argue,data):
     daily_data = read_dataline(day_argue,data)
     wind_speed = daily_data[gmVars.windVar]
@@ -100,12 +86,6 @@ def calculate_phi_c(T_wk, day_argue,data):
     phi_c = float(1.5701 * W * (T_wc-T_ac))
 
     return(phi_c)
-
-############### Creating simulation loop for daily values #############################
-# Energy Flux equation: phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c   
-# Heat at t-1 time step: H_t_1 = T_wk * water_heat_capacity * water_density
-# Heat at t: H_t = H_t_1 + phi_net
-# T_w = H_t/ (water_heat_capacity * water_density)
 
 # loop for energy flux equation 
 def main_simulation_loop(data,waterTemp,T_wk0,numberDays,saveFile):
@@ -146,7 +126,6 @@ def main_simulation_loop(data,waterTemp,T_wk0,numberDays,saveFile):
         
         T_wC = T_wk - 273.15 #change to degree celcius   
 
-
         H_t_1 = T_wC * gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density
         #check if K or C
 
@@ -154,12 +133,11 @@ def main_simulation_loop(data,waterTemp,T_wk0,numberDays,saveFile):
         T_w = H_t/ (gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density)
         print(f'    Iteration: {count} output temp: {T_w}')
 
-        #add T_w to a list somehow
+        #add T_w to a list
         T_wC_vec.append(T_w)
 
         T_wk = T_w + 273.15 #convert back to kelvin
         T_wK_vec.append(T_wk)
-
     
     T_wC = np.array(T_wC_vec)
     
@@ -174,7 +152,6 @@ def main_simulation_loop(data,waterTemp,T_wk0,numberDays,saveFile):
     df1['simTemp_K'] = T_wK_vec
     df1['observedWater_dailyAvg'] = waterTemp[gmVars.waterTempVar]
     
-
     plt.plot(T_wC, label = 'Simulated Water temp')
     plt.plot(data[gmVars.airTempVarC], label = 'Air temp')
     plt.plot(waterTemp[gmVars.waterTempVar], label = 'Observed Water temp')
@@ -229,13 +206,12 @@ def climatology_simulation_loop(data,T_wk0,numberDays,saveFile):
         T_wC = T_wk - 273.15 #change to degree celcius   
 
         H_t_1 = T_wC * gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density
-        #check if K or C
 
         H_t = H_t_1 + (phi_net * gmVars.area * gmVars.t)
         T_w = H_t/ (gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density)
         print(f'    Iteration {count} output temp: {T_w}')
 
-        #add T_w to a list somehow
+        #add T_w to a list
         T_wC_vec.append(T_w)
 
         T_wk = T_w + 273.15 #convert back to kelvin
