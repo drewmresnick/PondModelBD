@@ -8,6 +8,7 @@ import math
 import matplotlib.pyplot as plt
 import bechetVars
 
+#find the day of the model
 def find_day_month_year(input_day, start_date):
     start_date = dt.datetime.strptime(start_date, "%d/%m/%Y")
     computed_day = (start_date + dt.timedelta(days = float(input_day))).date()
@@ -21,10 +22,9 @@ def read_dataline(day_argue, hour,data):
     selected_data = data[(data[bechetVars.dyVar]== day) & (data[bechetVars.hrVar] == hour)& (data[bechetVars.yrVar] == year)]
     return selected_data 
 
-#pond radiation
+#pond radiation, pp.3703, eqn.2 (Béchet et al 2011)
+#Qra,p = -εwσTp4S 
 def calculate_Qrap(T_wk):
-    
-    #Qra,p = -εwσTp4S 
     ew = 0.97 #water emissivity
 
     roh1 = 5.67 * (10**(-8)) #Wm-2K-4
@@ -33,7 +33,7 @@ def calculate_Qrap(T_wk):
     Qrap = -ew * roh1 * SA * (T_wk**4) 
     return Qrap
 
-#solar radiation
+#solar radiation, pp.3703, eqn.3 (Béchet et al 2011)
 #Qra,s = (1-fa)HsS
 def calculate_Qras(day_argue, hour,data):
     daily_data = read_dataline(day_argue, hour,data)
@@ -47,7 +47,7 @@ def calculate_Qras(day_argue, hour,data):
     Qras = (1-fa) * Hs * SA
     return Qras
 
-#air radiation
+#air radiation, pp.3703, eqn.4 (Béchet et al 2011)
 #Qra,a = εw εa σTa4S
 def calculate_Qraa(day_argue, hour,data):
     daily_data = read_dataline(day_argue, hour,data)
@@ -64,7 +64,7 @@ def calculate_Qraa(day_argue, hour,data):
 
     return Qraa
 
-#evaporation
+#evaporation, pp.7303-3704, eqns.5-12 (Béchet et al 2011)
 #Qevap = -meLwS 
 def calculate_Qevap(day_argue, hour,T_wk,data):
     daily_data = read_dataline(day_argue, hour,data)
@@ -101,7 +101,7 @@ def calculate_Qevap(day_argue, hour,T_wk,data):
 
     return Qevap
 
-#convection 
+#convection, pp.3704, eqn.13-15 (Béchet et al 2011) 
 #Qconv = hconv(Ta – Tp)S
 def calculate_Qconv(day_argue, hour,data):
     daily_data = read_dataline(day_argue, hour,data)
