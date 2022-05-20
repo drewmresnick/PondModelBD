@@ -32,7 +32,7 @@ def calculate_phi_sn(day_argue,data):
     
     R= R_s *(1-0.08 * W_z)
     
-    phi_s = float(daily_data[gmVars.sradVar]) * (1000/24) #Kj/m2/hr in excel file says SRAD_MJ/m2day
+    phi_s = float(daily_data[gmVars.sradVar]) * (1000/24) #Kj/m2/hr; in excel file says SRAD_MJ/m2day
 
     phi_sn = phi_s * (1-R)
     
@@ -126,6 +126,8 @@ def main_simulation_loop(data,waterTemp,T_wk0,numberDays,saveFile):
         
         T_wC = T_wk - 273.15 #change to degree celcius   
 
+        #We calculate the heat at t-1 and add the change in heat to get
+        #heat at time t; then convert that to a temperature value
         H_t_1 = T_wC * gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density
         #check if K or C
 
