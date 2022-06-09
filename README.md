@@ -34,7 +34,7 @@ Please refer to the main runFiles in each model subdirectory for more model spec
         2. Temperature at 2m (K)  
         3. Relative humidity at 2m (%)  
         4. Wind Speed at 2m (m/s)  
-        5. Total direct and diffuse solar irradiance (W/m2)  
+        5. Total direct and diffuse solar irradiance (MJ/m2/day)  
         6. Year (yyyy)  
         7. Month (mm)  
         8. Day (day of year, 1-365)  
