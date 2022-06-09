@@ -108,8 +108,6 @@ def main_simulation_loop(data,waterTemp,T_wk0,numberDays,saveFile):
         
         count = count + 1
 
-        print(f"Iteration {count} start temp: {T_wk}")
-
         phi_sn = calculate_phi_sn(day_argue,data)
         phi_at = calculate_phi_at(day_argue,data)
         phi_ws = calculate_phi_ws(T_wk, day_argue,data)
@@ -133,7 +131,6 @@ def main_simulation_loop(data,waterTemp,T_wk0,numberDays,saveFile):
 
         H_t = H_t_1 + (phi_net * gmVars.area * gmVars.t)
         T_w = H_t/ (gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density)
-        print(f'    Iteration: {count} output temp: {T_w}')
 
         #add T_w to a list
         T_wC_vec.append(T_w)
@@ -189,8 +186,6 @@ def climatology_simulation_loop(data,T_wk0,numberDays,saveFile):
         
         count = count + 1
 
-        print(f"Iteration {count} start temp: {T_wk}")
-
         phi_sn = calculate_phi_sn(day_argue,data)
         phi_at = calculate_phi_at(day_argue,data)
         phi_ws = calculate_phi_ws(T_wk, day_argue,data)
@@ -211,7 +206,6 @@ def climatology_simulation_loop(data,T_wk0,numberDays,saveFile):
 
         H_t = H_t_1 + (phi_net * gmVars.area * gmVars.t)
         T_w = H_t/ (gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density)
-        print(f'    Iteration {count} output temp: {T_w}')
 
         #add T_w to a list
         T_wC_vec.append(T_w)
