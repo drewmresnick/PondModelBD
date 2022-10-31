@@ -139,7 +139,7 @@ def main_simulation_loop(data,waterTemp,T_wk0,numberDays,saveFile):
         T_wK_vec.append(T_wk)
 
     T_wC = np.array(T_wC_vec)
-    df1 = data.loc[0:(numberDays-2)]
+    df1 = data.loc[0:(numberDays-2)].copy()
     df1['phi_at'] = phi_at_vec
     df1['phi_ws'] = phi_ws_vec
     df1['phi_e'] = phi_e_vec
@@ -215,7 +215,7 @@ def climatology_simulation_loop(data,T_wk0,numberDays,saveFile):
         T_wk = T_w + 273.15 #convert back to kelvin
         T_wK_vec.append(T_wk)
 
-    df1 = data.loc[0:(numberDays-2)]
+    df1 = data.loc[0:(numberDays-2)].copy()
     df1['simTemp_C'] = T_wC_vec
     df1['simTemp_K'] = T_wK_vec
     df1['phi_at'] = phi_at_vec
