@@ -1,4 +1,4 @@
-# IRI aquaculture Bangladesh 
+# IRI aquaculture Bangladesh
 
 """
 Simple Energy flux model for mixed pond  #######
@@ -27,5 +27,5 @@ if gmVars.dataType == 'D':
 elif gmVars.dataType == 'C':
     data = pd.read_csv(f'{gmVars.filesPath}{gmVars.inputFileName}')
     gaoMerrickFuncs.climatology_simulation_loop(data, gmVars.T_wk0, gmVars.numberDays, gmVars.saveFile)
-    
+
 print("Run completed")
