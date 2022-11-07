@@ -14,10 +14,9 @@ dataType = config.get('data', 'dataType')
 #data variable names
 dayVar = config.get('inputVarNames','dayVar')
 yearVar = config.get('inputVarNames','yearVar')
+precipVar = config.get('inputVarNames','precipVar')
 windVar = config.get('inputVarNames','windVar')
 sradVar = config.get('inputVarNames','sradVar')
-
-#airTempInputVar = config.get('inputVarNames','airTempInputVar')
 rhVar = config.get('inputVarNames','rhVar')
 airTempVar = config.get('inputVarNames','airTempVar')
 airTempVarC = config.get('inputVarNames','airTempVarC')
@@ -38,5 +37,5 @@ numberDays = config.getint('data','numberDays') #number days model will run for
 pi = 3.1415
 sigma = 2.07e-7 ##stefan boltzman constant
 N = 5.0593 ##empirical coefficient unit m^-2km^-1 mmHg^-1
-water_heat_capacity = 4.184 #joules
+water_heat_capacity = 4.184 #kJ/kgC
 water_density = 997 #kg/m3
