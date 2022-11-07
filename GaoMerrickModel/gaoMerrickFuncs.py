@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import gmVars
 
 #create a function to get month and year based on integer sequence input
-def find_day_month_year(input_day, data, start_date): #dt.date(2016,12,31)):
+def find_day_month_year(input_day, start_date): #dt.date(2016,12,31)):
     start_date = dt.datetime.strptime(start_date, "%d/%m/%Y")
     computed_day = (start_date + dt.timedelta(days = float(input_day))).date()
     days_from_year_start = computed_day - dt.date(computed_day.year, 1, 1) + dt.timedelta(days = 1)
@@ -15,7 +15,7 @@ def find_day_month_year(input_day, data, start_date): #dt.date(2016,12,31)):
 #create a function to read data for particular day, month and year so we can use it to loop through all days later
 
 def read_dataline(day_argue,data):
-    day, day_mon_year = find_day_month_year(day_argue,data,gmVars.start_date)
+    day, day_mon_year = find_day_month_year(day_argue,gmVars.start_date)
     year = day_mon_year.year
     selected_data = data[(data[gmVars.dayVar]== day) & (data[gmVars.yearVar] == year)]
     return selected_data
