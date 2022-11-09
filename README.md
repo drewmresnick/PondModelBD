@@ -67,7 +67,7 @@ There is an additional python file `climatologyDS_setup.py` which can be used to
 #### To run a model  
 1. Update config file to have match your input/out directory and data structures.
 3. Have packages indicated above installed.
-4. Run the runFile file for the associated model you want to use.
+4. Run the `runFile` file for the associated model you want to use as `python runFile.py`.
     - Make sure you are inside the directory where the model files are located, 
       otherwise your terminal will not be able to find the functions and variables files.
 5. View outputs in your output subdirectory, if saveFile = y 
