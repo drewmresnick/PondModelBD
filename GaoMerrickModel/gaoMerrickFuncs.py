@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import gmVars
 
 #create a function to get month and year based on integer sequence input
-def find_day_month_year(input_day, data, start_date): #dt.date(2016,12,31)):
+def find_day_month_year(input_day, start_date): #dt.date(2016,12,31)):
     start_date = dt.datetime.strptime(start_date, "%d/%m/%Y")
     computed_day = (start_date + dt.timedelta(days = float(input_day))).date()
     days_from_year_start = computed_day - dt.date(computed_day.year, 1, 1) + dt.timedelta(days = 1)
@@ -15,7 +15,7 @@ def find_day_month_year(input_day, data, start_date): #dt.date(2016,12,31)):
 #create a function to read data for particular day, month and year so we can use it to loop through all days later
 
 def read_dataline(day_argue,data):
-    day, day_mon_year = find_day_month_year(day_argue,data,gmVars.start_date)
+    day, day_mon_year = find_day_month_year(day_argue,gmVars.start_date)
     year = day_mon_year.year
     selected_data = data[(data[gmVars.dayVar]== day) & (data[gmVars.yearVar] == year)]
     return selected_data
@@ -87,6 +87,17 @@ def calculate_phi_c(T_wk, day_argue,data):
 
     return(phi_c)
 
+#rain heat flux, adapted from eqn. 21 (pp 3706, Béchet et al 2011)
+#phi_r = p*C*q_r(T_a - T_p)S
+def calculate_phi_r(T_wk,day_argue,data):
+    daily_data = read_dataline(day_argue,data)
+    T_ak = float(daily_data[gmVars.airTempVar])
+    precip = float(daily_data[gmVars.precipVar])
+
+    phi_r = float(gmVars.water_density * gmVars.water_heat_capacity * precip * (T_ak-T_wk)) * 3600 #units need to be in kJm-2h-1
+
+    return(phi_r)
+
 # loop for energy flux equation
 def main_simulation_loop(data,waterTemp,T_wk0,numberDays,saveFile):
     #global obsData
@@ -103,6 +114,7 @@ def main_simulation_loop(data,waterTemp,T_wk0,numberDays,saveFile):
     phi_ws_vec = []
     phi_e_vec = []
     phi_sn_vec = []
+    phi_r_vec = []
 
     for day_argue in list(range(1, numberDays)): #731
 
@@ -113,7 +125,9 @@ def main_simulation_loop(data,waterTemp,T_wk0,numberDays,saveFile):
         phi_ws = calculate_phi_ws(T_wk, day_argue,data)
         phi_e = calculate_phi_e(T_wk, day_argue,data)
         phi_c = calculate_phi_c(T_wk, day_argue,data)
-        phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c
+        phi_r = calculate_phi_r(T_wk, day_argue,data)
+        phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c - phi_r
+
 
         phi_at_vec.append(phi_at)
         phi_ws_vec.append(phi_ws)
@@ -121,6 +135,7 @@ def main_simulation_loop(data,waterTemp,T_wk0,numberDays,saveFile):
         phi_c_vec.append(phi_c)
         phi_net_vec.append(phi_net)
         phi_sn_vec.append(phi_sn)
+        phi_r_vec.append(phi_r)
 
         T_wC = T_wk - 273.15 #change to degree celcius
 
@@ -145,6 +160,7 @@ def main_simulation_loop(data,waterTemp,T_wk0,numberDays,saveFile):
     df1['phi_e'] = phi_e_vec
     df1['phi_c'] = phi_c_vec
     df1['phi_sn'] = phi_sn_vec
+    df1['phi_r'] = phi_r_vec
     df1['phi_net'] = phi_net_vec
     df1['simTemp_C'] = T_wC_vec
     df1['simTemp_K'] = T_wK_vec
@@ -183,6 +199,7 @@ def climatology_simulation_loop(data,T_wk0,numberDays,saveFile):
     phi_ws_vec = []
     phi_e_vec = []
     phi_sn_vec = []
+    phi_r_vec = []
 
     for day_argue in list(range(1, numberDays)):
 
@@ -193,7 +210,8 @@ def climatology_simulation_loop(data,T_wk0,numberDays,saveFile):
         phi_ws = calculate_phi_ws(T_wk, day_argue,data)
         phi_e = calculate_phi_e(T_wk, day_argue,data)
         phi_c = calculate_phi_c(T_wk, day_argue,data)
-        phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c
+        phi_c = calculate_phi_r(T_wk, day_argue,data)
+        phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c + phi_r
 
         phi_at_vec.append(phi_at)
         phi_ws_vec.append(phi_ws)
@@ -201,6 +219,7 @@ def climatology_simulation_loop(data,T_wk0,numberDays,saveFile):
         phi_c_vec.append(phi_c)
         phi_net_vec.append(phi_net)
         phi_sn_vec.append(phi_sn)
+        phi_r_vec.append(phi_r)
 
         T_wC = T_wk - 273.15 #change to degree celcius
 
@@ -223,6 +242,7 @@ def climatology_simulation_loop(data,T_wk0,numberDays,saveFile):
     df1['phi_e'] = phi_e_vec
     df1['phi_c'] = phi_c_vec
     df1['phi_sn'] = phi_sn_vec
+    df1['phi_r'] = phi_r_vec
     df1['phi_net'] = phi_net_vec
 
     print("Model run complete. Now returning plots.")
