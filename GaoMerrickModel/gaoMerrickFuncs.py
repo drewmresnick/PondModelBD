@@ -149,7 +149,7 @@ def calculate_phi_r(T_wk,day_argue,data):
     T_ak = float(daily_data[gmVars.airTempVar])
     precip = float(daily_data[gmVars.precipVar])
 
-    phi_r = float(gmVars.water_density * gmVars.water_heat_capacity * precip * T_ak-T_wk) * 3600 #units need to be in kJm-2h-1
+    phi_r = float(gmVars.water_density * gmVars.water_heat_capacity * precip * (T_ak-T_wk)) * 3600 #units need to be in kJm-2h-1
 
     return(phi_r)
 
