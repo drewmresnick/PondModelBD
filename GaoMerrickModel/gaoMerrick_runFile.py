@@ -23,7 +23,8 @@ print("Running...")
 if gmVars.dataType == 'D':
     data = pd.read_csv(f'{gmVars.filesPath}{gmVars.inputFileName}')
     watertemp = pd.read_csv(f'{gmVars.filesPath}{gmVars.obsFileName}') #observed data
-    gaoMerrickFuncs.main_simulation_loop(data, watertemp, gmVars.T_wk0, gmVars.numberDays, gmVars.saveFile)
+    gaoMerrickFuncs.main_simulation_loop(data, watertemp, gmVars.T_wk0_v1, gmVars.numberDays, gmVars.saveFile)
+    #gaoMerrickFuncs.main_simulation_loop_stratified(data, watertemp, gmVars.T_wk0_v1, gmVars.T_wk0_v2, gmVars.numberDays, gmVars.saveFile)
 elif gmVars.dataType == 'C':
     data = pd.read_csv(f'{gmVars.filesPath}{gmVars.inputFileName}')
     gaoMerrickFuncs.climatology_simulation_loop(data, gmVars.T_wk0, gmVars.numberDays, gmVars.saveFile)
