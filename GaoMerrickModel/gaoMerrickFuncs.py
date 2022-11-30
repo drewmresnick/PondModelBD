@@ -296,18 +296,25 @@ def main_simulation_loop_stratified(data,waterTemp,T_wk0_v1,T_wk0_v2,numberDays,
         T_wC_v1 = T_wk_v1 - 273.15 #change to degree celcius
         T_wC_v2 = T_wk_v2 - 273.15 #change to degree celcius
 
-        #We calculate the heat at t-1 and add the change in heat to get
-        #heat at time t; then convert that to a temperature value
-        H_t_1_v1 = T_wC_v1 * gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density
-        H_t_1_v2 = T_wC_v2 * gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density
-        #check if K or C
+        if T_wC_v1 > T_wC_v2:
+            print("V1 is hotter than volume 2")
+            #We calculate the heat at t-1 and add the change in heat to get
+            #heat at time t; then convert that to a temperature value
+            H_t_1_v1 = T_wC_v1 * gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density
+            H_t_1_v2 = T_wC_v2 * gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density
+            #check if K or C
 
-        H_t_v1 = H_t_1_v1 + ((phi_net-phi_d) * gmVars.area * gmVars.t)
-        T_w_v1 = H_t_v1/ (gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density)
-        print(f"temp at volume 1: {T_w_v1}")
-        H_t_v2 = H_t_1_v2 + ((phi_sn + phi_d) * gmVars.area * gmVars.t)
-        T_w_v2 = H_t_v2/ (gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density)
-        print(f"temp at volume 2: {T_w_v2}")
+            H_t_v1 = H_t_1_v1 + ((phi_net-phi_d) * gmVars.area * gmVars.t)
+            T_w_v1 = H_t_v1/ (gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density)
+            print(f"temp at volume 1: {T_w_v1}")
+            H_t_v2 = H_t_1_v2 + ((phi_net + phi_d) * gmVars.area * gmVars.t)
+            T_w_v2 = H_t_v2/ (gmVars.volume * gmVars.water_heat_capacity * gmVars.water_density)
+            print(f"temp at volume 2: {T_w_v2}")
+        elif T_wC_v1 < T_wC_v2:
+            print("V1 is colder than v2")
+            T_w_v1,T_w_v2 = (T_wC_v1 + T_wC_v2)/2
+            print(f"temp at both volumes: {T_w_v1}")
+
         #add T_w to a list
         T_wC_v1_vec.append(T_w_v1)
         T_wC_v2_vec.append(T_w_v2)
