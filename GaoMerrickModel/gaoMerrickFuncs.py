@@ -287,7 +287,7 @@ def simplified_simulation_loop(data,T_wk0,numberDays,start_date,modelRun,season,
     doy_vec = []
     tercile_vec = []
 
-    for day_argue in list(range(1, numberDays)): #731
+    for day_argue in list(range(1, numberDays)):
 
         DOY = DOY + 1
 
@@ -329,7 +329,7 @@ def simplified_simulation_loop(data,T_wk0,numberDays,start_date,modelRun,season,
         T_wK_vec.append(T_wk)
 
     T_wC = np.array(T_wC_vec)
-    df1 = pd.DataFrame()#data.loc[0:(numberDays-2)].copy()
+    df1 = pd.DataFrame()
     df1['season'] = season_vec
     df1['tercile'] = tercile_vec
     df1['model_run'] = model_run_vec
@@ -344,25 +344,26 @@ def simplified_simulation_loop(data,T_wk0,numberDays,start_date,modelRun,season,
     df1['simTemp_C'] = T_wC_vec
     df1['simTemp_K'] = T_wK_vec
 
-    run_means = df1.mean()
+    #select only the months in the season from the full 6 months the model runs
+    selected_season = df1[(df1[gmVars.dayVar] >= 90) & (df1[gmVars.dayVar] <= 180)]
+    run_means = selected_season.mean()
 
     data = {
-        'season':season,
-        'tercile':df1['tercile'][0],
-        'model_run':run_means['model_run'],
-        'phi_at':run_means['phi_at'],
-        'phi_ws':run_means['phi_ws'],
-        'phi_e':run_means['phi_e'],
-        'phi_c':run_means['phi_c'],
-        'phi_sn':run_means['phi_sn'],
-        'phi_r':run_means['phi_r'],
-        'phi_net':run_means['phi_net'],
-        'simTemp_C':run_means['simTemp_C'],
-        'simTemp_K':run_means['simTemp_K']
+        'season':[season,],
+        'tercile':[df1['tercile'][0],],
+        'model_run':[run_means['model_run'],],
+        'phi_at':[run_means['phi_at'],],
+        'phi_ws':[run_means['phi_ws'],],
+        'phi_e':[run_means['phi_e'],],
+        'phi_c':[run_means['phi_c'],],
+        'phi_sn':[run_means['phi_sn'],],
+        'phi_r':[run_means['phi_r'],],
+        'phi_net':[run_means['phi_net'],],
+        'simTemp_C':[run_means['simTemp_C'],],
+        'simTemp_K':[run_means['simTemp_K']],
     }
-    print(data)
+
     means_dataframe = pd.DataFrame(data)
-    print(means_dataframe)
 
     return df1, means_dataframe
 
@@ -370,12 +371,12 @@ def simplified_simulation_loop(data,T_wk0,numberDays,start_date,modelRun,season,
 
 def seasonal_simulation_terciles(fullData,terciles,seasonalMeans,T_wk0,numberDays,saveFile):
     seasons = ["JFM","AMJ","JAS","OND"]
-    modelRuns_full = {}
     dataFrame_full = pd.DataFrame()
+    means_outputs = pd.DataFrame()
     means_full = pd.DataFrame()
 
     for season in seasons: #getting the number of samples for each tercile
-
+        print(f"Now running for season: {season}")
         below = int(terciles[terciles["season"]==season]["below"].round().values[0])
         average = int(terciles[terciles["season"]==season]["average"].round().values[0])
         above = int(terciles[terciles["season"]==season]["above"].round().values[0])
@@ -386,7 +387,7 @@ def seasonal_simulation_terciles(fullData,terciles,seasonalMeans,T_wk0,numberDay
 
         #sampled_data, year_string = data_sampling(season,terciles)
         for tercile in list(terciles_dict.keys()):
-
+            print(f"      tercile run: {tercile}")
             for run in range(1,(terciles_dict[tercile]+1)): #sampling for the number of times associated with each tercile
 
                 if tercile == "above":
@@ -411,15 +412,37 @@ def seasonal_simulation_terciles(fullData,terciles,seasonalMeans,T_wk0,numberDay
                         year_string = f"01/07/{sampled_year}" #day month year
 
                 #now we run the model with the selected data
-                daysCount = 3 #181 #6 months of data will be run through the model for each model run
+                daysCount = 181 #6 months of data will be run through the model for each model run
 
                 modelRuns, runMeans = simplified_simulation_loop(sampled_data,gmVars.T_wk0,daysCount,year_string,run,season,tercile)
                 dataFrame_full = dataFrame_full.append(modelRuns)
-                means_full = means_full.append(runMeans)
-            #dataFrame_full = pd.concat(dataFrame_full,axis=1)
+                means_outputs = means_outputs.append(runMeans)
+
+    for season in seasons:
+        for tercile in list(terciles_dict.keys()):
+            run_means = means_outputs[(means_outputs['season']==season) & (means_outputs['tercile']==tercile)].mean()
+            
+            data = {
+                'season':[season,],
+                'tercile':[tercile,],
+                'model_run':[run_means['model_run'],],
+                'phi_at':[run_means['phi_at'],],
+                'phi_ws':[run_means['phi_ws'],],
+                'phi_e':[run_means['phi_e'],],
+                'phi_c':[run_means['phi_c'],],
+                'phi_sn':[run_means['phi_sn'],],
+                'phi_r':[run_means['phi_r'],],
+                'phi_net':[run_means['phi_net'],],
+                'simTemp_C':[run_means['simTemp_C'],],
+                'simTemp_K':[run_means['simTemp_K']],
+            }
+            means_dataframe = pd.DataFrame(data)
+
+            means_full = means_full.append(means_dataframe)
 
     if saveFile =="y":
         dataFrame_full.to_csv(f'{gmVars.outputFilesPath}{gmVars.outputFilesName}_full.csv',index=True)
         means_full.to_csv(f'{gmVars.outputFilesPath}{gmVars.outputFilesName}_means.csv',index=True)
+        means_outputs.to_csv(f'{gmVars.outputFilesPath}{gmVars.outputFilesName}_means_raw.csv',index=True)
 
     return dataFrame_full
