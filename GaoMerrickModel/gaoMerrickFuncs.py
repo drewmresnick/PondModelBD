@@ -266,7 +266,7 @@ def climatology_simulation_loop(data,T_wk0,numberDays,saveFile):
         plt.show()
 
 
-def simplified_simulation_loop(data,T_wk0,numberDays,start_date,modelRun,season,tercile):
+def simplified_simulation_loop(data,T_wk0,numberDays,start_date,season,year):
     #global obsData
     global T_wk
     T_wk = T_wk0
@@ -282,10 +282,7 @@ def simplified_simulation_loop(data,T_wk0,numberDays,start_date,modelRun,season,
     phi_e_vec = []
     phi_sn_vec = []
     phi_r_vec = []
-    model_run_vec = []
-    season_vec = []
     doy_vec = []
-    tercile_vec = []
 
     for day_argue in list(range(1, numberDays)):
 
@@ -307,10 +304,7 @@ def simplified_simulation_loop(data,T_wk0,numberDays,start_date,modelRun,season,
         phi_net_vec.append(phi_net)
         phi_sn_vec.append(phi_sn)
         phi_r_vec.append(phi_r)
-        model_run_vec.append(modelRun)
-        season_vec.append(season)
         doy_vec.append(DOY)
-        tercile_vec.append(tercile)
 
         T_wC = T_wk - 273.15 #change to degree celcius
 
@@ -330,9 +324,6 @@ def simplified_simulation_loop(data,T_wk0,numberDays,start_date,modelRun,season,
 
     T_wC = np.array(T_wC_vec)
     df1 = pd.DataFrame()
-    df1['season'] = season_vec
-    df1['tercile'] = tercile_vec
-    df1['model_run'] = model_run_vec
     df1['DOY'] = doy_vec
     df1['phi_at'] = phi_at_vec
     df1['phi_ws'] = phi_ws_vec
@@ -349,9 +340,8 @@ def simplified_simulation_loop(data,T_wk0,numberDays,start_date,modelRun,season,
     run_means = selected_season.mean()
 
     data = {
+        'year':[year,],
         'season':[season,],
-        'tercile':[df1['tercile'][0],],
-        'model_run':[run_means['model_run'],],
         'phi_at':[run_means['phi_at'],],
         'phi_ws':[run_means['phi_ws'],],
         'phi_e':[run_means['phi_e'],],
@@ -367,82 +357,95 @@ def simplified_simulation_loop(data,T_wk0,numberDays,start_date,modelRun,season,
 
     return df1, means_dataframe
 
+    return dataFrame_full
 
 
-def seasonal_simulation_terciles(fullData,terciles,seasonalMeans,T_wk0,numberDays,saveFile):
+def seasonal_simulation_terciles(fullData,seasonalMeans,T_wk0,numberDays,saveFile):
     seasons = ["JFM","AMJ","JAS","OND"]
     dataFrame_full = pd.DataFrame()
     means_outputs = pd.DataFrame()
     means_full = pd.DataFrame()
+    print("    Running model on all years of data...")
+    for year in range(1990,(2020+1)):
 
-    for season in seasons: #getting the number of samples for each tercile
-        print(f"Now running for season: {season}")
-        below = int(terciles[terciles["season"]==season]["below"].round().values[0])
-        average = int(terciles[terciles["season"]==season]["average"].round().values[0])
-        above = int(terciles[terciles["season"]==season]["above"].round().values[0])
+        for season in [gmVars.season]: #currently just running for a single season at a time
+            if season == "JFM": #we start the model run three months before target season so JFM needs data from previous year
+                sampled_data = fullData[(fullData[gmVars.yearVar]>=(year-1)) & (fullData[gmVars.yearVar]<=year)]
+                year_string = f"01/10/{(year-1)}" #day month year date that the model will start running on 
+            else:
+                sampled_data = fullData[fullData[gmVars.yearVar]==year]
+                if season == "AMJ":
+                    year_string = f"01/01/{year}" #day month year
+                if season == "JAS":
+                    year_string = f"01/04/{year}" #day month year
+                if season == "OND":
+                    year_string = f"01/07/{year}" #day month year
+
+                    #now we run the model with the selected data
+            daysCount = 181 #6 months of data will be run through the model for each model run
+
+            modelRuns, runMeans = simplified_simulation_loop(sampled_data,gmVars.T_wk0,daysCount,year_string,season,year)
+            dataFrame_full = dataFrame_full.append(modelRuns)
+            means_outputs = means_outputs.append(runMeans) 
+    print("    Getting and sorting yearly averages from model run...")
+    yearly_averages_sorted_og = means_outputs.groupby('year').mean().sort_values(by=['simTemp_C'],ascending=False)
+    yearly_averages_sorted = yearly_averages_sorted_og
+    yearly_averages_sorted['rank'] = range(1,32)
+    print("yearly avg sorted")
+    print(yearly_averages_sorted)
+
+    above_cutoff_temp = yearly_averages_sorted['simTemp_C'][yearly_averages_sorted['rank']==10].values[0]
+    below_cutoff_temp = yearly_averages_sorted['simTemp_C'][yearly_averages_sorted['rank']==20].values[0]
+    
+    if saveFile == "y":
+        yearly_averages_sorted.to_csv(f'{gmVars.outputFilesPath}{gmVars.outputFilesName}_{gmVars.season}_means_sorted.csv',index=True)
+    
+    print("    Sampling from the model outputs...")
+    #now we have the means for each season for each year so we can sample from that df
+    sampled_df = pd.DataFrame()
+    runs = []
+    terciles = []
+    for season in [gmVars.season]: #getting the number of samples for each tercile
+        print(f"    Sampling for season {season}")
+        below = gmVars.tercile_below
+        average = gmVars.tercile_avg
+        above = gmVars.tercile_above
         terciles_dict = {"below":below, "average":average, "above":above}
-        total_samples = below+average+above
 
         szn_means = seasonalMeans[seasonalMeans["season"]==season] #selecting seasonal means
 
-        #sampled_data, year_string = data_sampling(season,terciles)
         for tercile in list(terciles_dict.keys()):
-            print(f"      tercile run: {tercile}")
+            print(f"    tercile: {tercile}")
             for run in range(1,(terciles_dict[tercile]+1)): #sampling for the number of times associated with each tercile
 
                 if tercile == "above":
-                    szn_means_sel = szn_means[(szn_means["rank"]>=0) & (szn_means["rank"]<=10)]
+                    szn_means_sel = szn_means[(szn_means["rank"]>=1) & (szn_means["rank"]<=10)]
                 if tercile == "average":
-                    szn_means_sel = szn_means[(szn_means["rank"]>=10) & (szn_means["rank"]<=20)]
+                    szn_means_sel = szn_means[(szn_means["rank"]>10) & (szn_means["rank"]<=20)]
                 if tercile == "below":
-                    szn_means_sel = szn_means[(szn_means["rank"]>=20) & (szn_means["rank"]<=30)]    
-    
-                sampled_year = (szn_means_sel[gmVars.yearVar].sample()).values[0] #now we have the year that we will use to run with the model
-            
-                if season == "JFM": #we start the model run three months before target season so JFM needs data from previous year
-                    sampled_data = fullData[(fullData[gmVars.yearVar]>=(sampled_year-1)) & (fullData[gmVars.yearVar]<=sampled_year)]
-                    year_string = f"01/10/{(sampled_year-1)}" #day month year date that the model will start running on 
+                    szn_means_sel = szn_means[(szn_means["rank"]>20) & (szn_means["rank"]<=31)]  
+
+                sampled_year = (szn_means_sel[gmVars.yearVar].sample()).values[0] #now we have the year that we will use to run with the model  
+                sampled_year_data = means_outputs[(means_outputs['year']==sampled_year) & (means_outputs['season']==season)]
+                copy_of_sampled = sampled_year_data
+
+                print(f"    ***doing the copy stuff***")
+                copy_of_sampled['run'] = run 
+                copy_of_sampled['tercile_air'] = tercile
+                print(f"cutoffs: upper={above_cutoff_temp} lower={below_cutoff_temp}")
+                if copy_of_sampled['simTemp_C'].values[0] >= above_cutoff_temp:
+                    copy_of_sampled['tercile_water'] = str("above")
+                elif copy_of_sampled['simTemp_C'].values[0] <= below_cutoff_temp:
+                    copy_of_sampled['tercile_water'] = str("below")
                 else:
-                    sampled_data = fullData[fullData[gmVars.yearVar]==sampled_year]
-                    if season == "AMJ":
-                        year_string = f"01/01/{sampled_year}" #day month year
-                    if season == "JAS":
-                        year_string = f"01/04/{sampled_year}" #day month year
-                    if season == "OND":
-                        year_string = f"01/07/{sampled_year}" #day month year
+                    copy_of_sampled['tercile_water'] = str("average")
 
-                #now we run the model with the selected data
-                daysCount = 181 #6 months of data will be run through the model for each model run
-
-                modelRuns, runMeans = simplified_simulation_loop(sampled_data,gmVars.T_wk0,daysCount,year_string,run,season,tercile)
-                dataFrame_full = dataFrame_full.append(modelRuns)
-                means_outputs = means_outputs.append(runMeans)
-
-    for season in seasons:
-        for tercile in list(terciles_dict.keys()):
-            run_means = means_outputs[(means_outputs['season']==season) & (means_outputs['tercile']==tercile)].mean()
-            
-            data = {
-                'season':[season,],
-                'tercile':[tercile,],
-                'model_run':[run_means['model_run'],],
-                'phi_at':[run_means['phi_at'],],
-                'phi_ws':[run_means['phi_ws'],],
-                'phi_e':[run_means['phi_e'],],
-                'phi_c':[run_means['phi_c'],],
-                'phi_sn':[run_means['phi_sn'],],
-                'phi_r':[run_means['phi_r'],],
-                'phi_net':[run_means['phi_net'],],
-                'simTemp_C':[run_means['simTemp_C'],],
-                'simTemp_K':[run_means['simTemp_K']],
-            }
-            means_dataframe = pd.DataFrame(data)
-
-            means_full = means_full.append(means_dataframe)
-
-    if saveFile =="y":
-        dataFrame_full.to_csv(f'{gmVars.outputFilesPath}{gmVars.outputFilesName}_full.csv',index=True)
-        means_full.to_csv(f'{gmVars.outputFilesPath}{gmVars.outputFilesName}_means.csv',index=True)
-        means_outputs.to_csv(f'{gmVars.outputFilesPath}{gmVars.outputFilesName}_means_raw.csv',index=True)
-
-    return dataFrame_full
+                #sampled_df = sampled_df.append(copy_of_sampled)
+                sampled_df = pd.concat([sampled_df,copy_of_sampled])
+    print(f"cutoff temps: upper {above_cutoff_temp} below {below_cutoff_temp}")
+    if saveFile == "y":
+        sampled_df.to_csv(f'{gmVars.outputFilesPath}{gmVars.outputFilesName}_{gmVars.season}_means_resampled.csv',index=True)
+    
+    for tercile in list(terciles_dict.keys()):
+        occurance = sampled_df['tercile_water'].str.count(tercile).sum()
+        print(f"tercile {tercile}: {occurance}%") 

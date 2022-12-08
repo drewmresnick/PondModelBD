@@ -29,9 +29,7 @@ elif gmVars.dataType == 'C':
     gaoMerrickFuncs.climatology_simulation_loop(data, gmVars.T_wk0, gmVars.numberDays, gmVars.saveFile)
 elif gmVars.dataType == 'S':
     data = pd.read_csv(f'{gmVars.filesPath}{gmVars.inputFileName}')
-    terciles = pd.read_csv(f'{gmVars.filesPath}{gmVars.tercilesFileName}')
-    terciles = terciles[terciles['year']== gmVars.year]
     szn_means = pd.read_csv(f"{gmVars.filesPath}{gmVars.yearlySeasonalMeans}")
-    gaoMerrickFuncs.seasonal_simulation_terciles(data, terciles, szn_means, gmVars.T_wk0, gmVars.numberDays, gmVars.saveFile)    
+    gaoMerrickFuncs.seasonal_simulation_terciles(data, szn_means, gmVars.T_wk0, gmVars.numberDays, gmVars.saveFile)    
 
 print("Run completed")

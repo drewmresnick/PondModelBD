@@ -10,10 +10,13 @@ inputFileName = config.get('data', 'inputFile')
 obsFileName = config.get('data','observationData')
 outputFilesPath = config.get('data', 'outputFilesPath')
 outputFilesName = config.get('data','outputFilesName')
-tercilesFileName = config.get('seasonal','tercilesFileName')
-yearlySeasonalMeans = config.get('seasonal','yearlySeasonalMeans')
-year = config.getfloat('seasonal','year')
 
+#terciles
+yearlySeasonalMeans = config.get('seasonal','yearlySeasonalMeans')
+tercile_below = config.getint('seasonal','tercile_below')
+tercile_avg = config.getint('seasonal','tercile_avg')
+tercile_above = config.getint('seasonal','tercile_above')
+season = config.get('seasonal','season')
 
 #data information
 dataType = config.get('data', 'dataType')
@@ -44,7 +47,6 @@ t = config.getfloat('modelConstants', 'timeStep') #hrs
 
 
 #model run info
-
 T_wk0 = config.getfloat('modelConstants', 'initialTemp') #first day water temp at khulna
 numberDays = config.getint('data','numberDays') #number days model will run for
 
