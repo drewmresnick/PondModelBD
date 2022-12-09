@@ -210,8 +210,8 @@ def climatology_simulation_loop(data,T_wk0,numberDays,saveFile):
         phi_ws = calculate_phi_ws(T_wk, day_argue,data)
         phi_e = calculate_phi_e(T_wk, day_argue,data)
         phi_c = calculate_phi_c(T_wk, day_argue,data)
-        phi_c = calculate_phi_r(T_wk, day_argue,data)
-        phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c + phi_r
+        phi_r = calculate_phi_r(T_wk, day_argue,data)
+        phi_net = phi_sn + phi_at - phi_ws - phi_e - phi_c - phi_r
 
         phi_at_vec.append(phi_at)
         phi_ws_vec.append(phi_ws)
